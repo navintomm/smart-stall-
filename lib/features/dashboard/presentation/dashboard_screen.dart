@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/helpers/responsive_helper.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/display/section_header.dart';
@@ -109,4 +109,5 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
+
 

@@ -1,15 +1,19 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/command_log_entry.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
+import '../providers/manual_control_provider.dart';
 
-class CommandLogList extends StatelessWidget {
+class CommandLogList extends ConsumerWidget {
   const CommandLogList({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final logs = CommandLogEntry.placeholders;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(manualControlProvider);
+    final logs = state.logs;
+    
     return GlassCard(
       child: ListView.separated(
         shrinkWrap: true,
@@ -35,18 +39,18 @@ class _CommandLogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(log.icon, color: log.statusColor, size: 20),
-        const SizedBox(width: AppSpacing.sm),
+        Icon(log.icon, color: Colors.black54, size: 20),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(log.command, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-              Text("${log.timestamp} • ${log.source}", style: AppTextStyles.bodyMedium.copyWith(color: Colors.black54)),
+              Text(log.command, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+              Text("${log.source} • ${log.status}", style: AppTextStyles.bodyMedium.copyWith(color: Colors.black54)),
             ],
           ),
         ),
-        Text(log.status, style: AppTextStyles.bodyMedium.copyWith(color: log.statusColor, fontWeight: FontWeight.bold)),
+        Text(log.timestamp, style: AppTextStyles.bodyMedium.copyWith(color: Colors.black54)),
       ],
     );
   }
