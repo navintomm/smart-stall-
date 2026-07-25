@@ -25,7 +25,10 @@ class HardwareTelemetryRepository implements TelemetryRepository {
         
         // Extract battery
         if (payload.containsKey('bat')) {
-          _batteryController.add({'level': (payload['bat'] as num).toDouble()});
+          _batteryController.add({
+            'level': (payload['bat'] as num).toDouble(),
+            'voltage': payload.containsKey('bat_v') ? (payload['bat_v'] as num).toDouble() : 12.0
+          });
         }
 
         // Map everything else to SensorData list
@@ -34,7 +37,12 @@ class HardwareTelemetryRepository implements TelemetryRepository {
         if (payload.containsKey('soap')) sensors.add(SensorData(id: 'soap', name: 'Soap Tank', value: '${payload['soap']} %'));
         if (payload.containsKey('temp')) sensors.add(SensorData(id: 'temp', name: 'Motor Temp', value: '${payload['temp']} C'));
         if (payload.containsKey('rssi')) sensors.add(SensorData(id: 'rssi', name: 'Signal', value: '${payload['rssi']} dBm'));
+        if (payload.containsKey('obs')) sensors.add(SensorData(id: 'obs', name: 'Obstacle Dist', value: '${payload['obs']} cm'));
         
+        if (payload.containsKey('emg_sw') && payload['emg_sw'] == true) {
+            sensors.add(const SensorData(id: 'emg', name: 'Emergency', value: 'ACTIVE'));
+        }
+
         if (sensors.isNotEmpty) {
           _sensorDataController.add(sensors);
         }

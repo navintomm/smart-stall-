@@ -3,13 +3,26 @@
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
 #include "hardware/MotorController.h"
+#include "config/pin_map.h"
 #include "Logger.h"
+#include <Arduino.h>
 
 bool EmergencyController::_isEmergency = false;
 
 void EmergencyController::init() {
+    pinMode(Pins::EMERGENCY_SWITCH, INPUT_PULLUP);
     _isEmergency = false;
     Logger::info("HAL", "EmergencyController initialized");
+}
+
+void EmergencyController::tick() {
+    // Poll hardware switch. Assuming Active-LOW when pressed.
+    if (digitalRead(Pins::EMERGENCY_SWITCH) == LOW) {
+        if (!_isEmergency) {
+            triggerEmergencyStop();
+            Logger::error("HAL", "Hardware Emergency Switch PRESSED!");
+        }
+    }
 }
 
 void EmergencyController::triggerEmergencyStop() {

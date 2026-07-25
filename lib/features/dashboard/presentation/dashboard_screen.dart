@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/helpers/responsive_helper.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/display/section_header.dart';
@@ -8,6 +8,7 @@ import 'widgets/quick_actions_grid.dart';
 import 'widgets/system_overview_section.dart';
 import 'widgets/recent_activity_list.dart';
 import 'widgets/emergency_stop_card.dart';
+import 'widgets/safety_alert_banner.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -24,6 +25,12 @@ class DashboardScreen extends StatelessWidget {
             return CustomScrollView(
               slivers: [
                 const SliverToBoxAdapter(child: DashboardAppBar()),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: SafetyAlertBanner(),
+                  ),
+                ),
                 SliverPadding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   sliver: SliverList(

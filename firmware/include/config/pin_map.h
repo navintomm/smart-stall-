@@ -26,6 +26,7 @@ namespace Pins {
     const int SENSOR_WATER_LVL = 34; // ADC
     const int SENSOR_SOAP_LVL = 35;  // ADC
     const int SENSOR_BATTERY = 36;   // ADC
+    const int SENSOR_OBSTACLE = 39;  // ADC / Digital (Placeholder)
     
     // System
     const int EMERGENCY_SWITCH = 32; // Digital In

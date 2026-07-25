@@ -1,58 +1,70 @@
-﻿class TelemetryPayload {
+class TelemetryPayload {
   final double batteryPercentage;
+  final double batteryVoltage;
   final double waterTankLevel;
   final double soapTankLevel;
-  final double brushHealth;
+  final bool brushRunning;
+  final bool pumpWaterRunning;
+  final bool pumpSoapRunning;
   final double motorTemperature;
-  final double voltage;
-  final double current;
   final int signalStrength;
   final double cpuUsage;
   final double memoryUsage;
   final String robotMode;
   final bool emergencyStatus;
+  final bool emergencySwitch;
   final String firmwareVersion;
   final int systemUptime;
-  final int lastError;
-  final int connectionQuality;
+  final int obstacleDistance;
+  final int motorSpeed;
+  final String motorDirection;
+  final List<int> servoAngles;
 
   const TelemetryPayload({
     this.batteryPercentage = 0.0,
+    this.batteryVoltage = 12.0,
     this.waterTankLevel = 0.0,
     this.soapTankLevel = 0.0,
-    this.brushHealth = 100.0,
+    this.brushRunning = false,
+    this.pumpWaterRunning = false,
+    this.pumpSoapRunning = false,
     this.motorTemperature = 25.0,
-    this.voltage = 12.0,
-    this.current = 0.0,
     this.signalStrength = -100,
     this.cpuUsage = 0.0,
     this.memoryUsage = 0.0,
     this.robotMode = 'IDLE',
     this.emergencyStatus = false,
+    this.emergencySwitch = false,
     this.firmwareVersion = '0.0.0',
     this.systemUptime = 0,
-    this.lastError = 0,
-    this.connectionQuality = 0,
+    this.obstacleDistance = 999,
+    this.motorSpeed = 0,
+    this.motorDirection = 'STOP',
+    this.servoAngles = const [90, 90, 90, 90, 90],
   });
 
   factory TelemetryPayload.fromJson(Map<String, dynamic> json) {
     return TelemetryPayload(
       batteryPercentage: (json['bat'] ?? 0).toDouble(),
+      batteryVoltage: (json['bat_v'] ?? 12.0).toDouble(),
       waterTankLevel: (json['water'] ?? 0).toDouble(),
       soapTankLevel: (json['soap'] ?? 0).toDouble(),
-      brushHealth: (json['brush'] ?? 100).toDouble(),
+      brushRunning: json['brush'] as bool? ?? false,
+      pumpWaterRunning: json['pump_w'] as bool? ?? false,
+      pumpSoapRunning: json['pump_s'] as bool? ?? false,
       motorTemperature: (json['temp'] ?? 25).toDouble(),
-      voltage: (json['volt'] ?? 12).toDouble(),
-      current: (json['amp'] ?? 0).toDouble(),
       signalStrength: json['rssi'] as int? ?? -100,
       cpuUsage: (json['cpu'] ?? 0).toDouble(),
       memoryUsage: (json['mem'] ?? 0).toDouble(),
       robotMode: json['mode'] as String? ?? 'IDLE',
-      emergencyStatus: json['estop'] as bool? ?? false,
+      emergencyStatus: json['emg'] as bool? ?? false, // changed to emg
+      emergencySwitch: json['emg_sw'] as bool? ?? false,
       firmwareVersion: json['fw'] as String? ?? '0.0.0',
       systemUptime: json['uptime'] as int? ?? 0,
-      lastError: json['err'] as int? ?? 0,
-      connectionQuality: json['lqi'] as int? ?? 0,
+      obstacleDistance: json['obs'] as int? ?? 999,
+      motorSpeed: json['motor_speed'] as int? ?? 0,
+      motorDirection: json['motor_dir'] as String? ?? 'STOP',
+      servoAngles: (json['servos'] as List<dynamic>?)?.map((e) => e as int).toList() ?? const [90, 90, 90, 90, 90],
     );
   }
 }

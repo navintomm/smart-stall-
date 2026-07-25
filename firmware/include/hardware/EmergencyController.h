@@ -7,6 +7,7 @@ public:
     static void triggerEmergencyStop();
     static void reset();
     static bool isEmergency();
+    static void tick(); // Hardware polling
 
 private:
     static bool _isEmergency;

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 
 class TelemetrySimulator {
@@ -15,10 +15,13 @@ class TelemetrySimulator {
   void _startSimulation() {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _sensorController.add({
-        'Water Tank': "${60 + _random.nextInt(40)}%",
-        'Soap Tank': "${30 + _random.nextInt(10)}%",
-        'Brush Wear': "${8 + _random.nextInt(5)}%",
-        'Pump Flow': "${(1.0 + _random.nextDouble() * 0.5).toStringAsFixed(1)} L/m",
+        'bat': '${80 - (_random.nextInt(5))} %',
+        'bat_v': '${(12.0 - _random.nextDouble()).toStringAsFixed(1)} V',
+        'water': "${60 + _random.nextInt(40)} %",
+        'soap': "${30 + _random.nextInt(10)} %",
+        'temp': "${35 + _random.nextInt(5)} C",
+        'obs': "${50 + _random.nextInt(100)} cm",
+        'rssi': "-${60 + _random.nextInt(15)} dBm",
       });
     });
   }

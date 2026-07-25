@@ -41,6 +41,7 @@ void loop() {
     WifiServerHandler::tick();
     
     // 2. Hardware non-blocking ticks
+    EmergencyController::tick();
     ServoController::tick();
     PumpController::tick();
     BrushController::tick();

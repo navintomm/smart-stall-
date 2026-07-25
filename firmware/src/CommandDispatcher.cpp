@@ -4,6 +4,7 @@
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
 #include "hardware/MotorController.h"
+#include "hardware/SensorManager.h"
 #include "WifiServerHandler.h"
 #include "RobotState.h"
 #include "Logger.h"
@@ -15,6 +16,13 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
     }
 
     int cmdId = packet.commandId;
+    
+    RobotPacket ackPacket;
+    ackPacket.type = "ack";
+    ackPacket.protocolVersion = packet.protocolVersion;
+    ackPacket.sequenceNumber = packet.sequenceNumber;
+    ackPacket.commandId = packet.commandId;
+    ackPacket.timestamp = millis();
     
     switch(cmdId) {
         case 101: // MOVE_FORWARD
@@ -53,12 +61,30 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
             break;
             
         case 301: // WATER_PUMP
-            if (packet.payload["state"].as<bool>()) PumpController::start(0);
-            else PumpController::stop(0);
+            if (packet.payload["state"].as<bool>()) {
+                if (SensorManager::getWaterLevel() <= 5) {
+                    Logger::warning("CmdDispatch", "Water Tank Empty! Aborting Water Pump start.");
+                    ackPacket.type = "error";
+                    ackPacket.payload["status"] = "ERROR_WATER_EMPTY";
+                } else {
+                    PumpController::start(0);
+                }
+            } else {
+                PumpController::stop(0);
+            }
             break;
         case 302: // SOAP_PUMP
-            if (packet.payload["state"].as<bool>()) PumpController::start(1);
-            else PumpController::stop(1);
+            if (packet.payload["state"].as<bool>()) {
+                if (SensorManager::getSoapLevel() <= 5) {
+                    Logger::warning("CmdDispatch", "Soap Tank Empty! Aborting Soap Pump start.");
+                    ackPacket.type = "error";
+                    ackPacket.payload["status"] = "ERROR_SOAP_EMPTY";
+                } else {
+                    PumpController::start(1);
+                }
+            } else {
+                PumpController::stop(1);
+            }
             break;
         case 303: // BRUSH_MOTOR
             if (packet.payload["state"].as<bool>()) BrushController::start();
@@ -83,14 +109,10 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
     }
 
     // Send ACK Response
-    RobotPacket ackPacket;
-    ackPacket.type = "ack";
-    ackPacket.protocolVersion = packet.protocolVersion;
-    ackPacket.sequenceNumber = packet.sequenceNumber;
-    ackPacket.commandId = packet.commandId;
-    ackPacket.timestamp = millis();
-    
-    ackPacket.payload["status"] = "OK";
+    // (If not already modified to an error)
+    if (!ackPacket.payload.containsKey("status")) {
+        ackPacket.payload["status"] = "OK";
+    }
     
     String outJson;
     ProtocolCodec::encode(ackPacket, outJson);

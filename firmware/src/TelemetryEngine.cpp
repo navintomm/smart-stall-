@@ -8,6 +8,7 @@
 #include "hardware/EmergencyController.h"
 #include "hardware/ServoController.h"
 #include "hardware/MotorController.h"
+#include "config/pin_map.h"
 #include <WiFi.h>
 
 unsigned long TelemetryEngine::_lastTelemetryTime = 0;
@@ -29,14 +30,19 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         packet.sequenceNumber = currentMillis; // Simple placeholder seq
         
         packet.payload["bat"] = SensorManager::getBatteryLevel();
+        packet.payload["bat_v"] = SensorManager::getBatteryVoltage();
         packet.payload["water"] = SensorManager::getWaterLevel();
         packet.payload["soap"] = SensorManager::getSoapLevel();
         packet.payload["temp"] = SensorManager::getMotorTemp();
+        packet.payload["obs"] = SensorManager::getObstacleDistance();
         
         packet.payload["pump_w"] = PumpController::getStatus(0);
         packet.payload["pump_s"] = PumpController::getStatus(1);
         packet.payload["brush"] = BrushController::getStatus();
+        
         packet.payload["emg"] = EmergencyController::isEmergency();
+        // Hardware switch is active LOW, so !digitalRead
+        packet.payload["emg_sw"] = (digitalRead(Pins::EMERGENCY_SWITCH) == LOW);
 
         packet.payload["motor_speed"] = MotorController::getCurrentSpeed();
         packet.payload["motor_dir"] = MotorController::getCurrentDirection();
