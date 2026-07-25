@@ -1,4 +1,5 @@
 #include "WifiServerHandler.h"
+#include "hardware/EmergencyController.h"
 #include "Config.h"
 #include "Logger.h"
 #include "ProtocolCodec.h"
@@ -7,6 +8,7 @@
 WiFiServer WifiServerHandler::_server(Config::TCP_PORT);
 WiFiClient WifiServerHandler::_client;
 String WifiServerHandler::_lineBuffer = "";
+unsigned long WifiServerHandler::_lastHeartbeatTime = 0;
 
 void WifiServerHandler::init() {
     Logger::info("WiFi", "Connecting to AP...");
@@ -40,6 +42,7 @@ void WifiServerHandler::tick() {
             _client = newClient;
             Logger::info("WiFi", "New client connected.");
             _lineBuffer = ""; // Reset buffer
+            _lastHeartbeatTime = millis();
         }
     }
 
@@ -52,6 +55,7 @@ void WifiServerHandler::tick() {
                 if (_lineBuffer.length() > 0) {
                     processIncomingLine(_lineBuffer);
                     _lineBuffer = "";
+                    _lastHeartbeatTime = millis(); // Any valid packet acts as heartbeat
                 }
             } else if (c != '\r') {
                 // Ignore CR, append other chars
@@ -62,6 +66,13 @@ void WifiServerHandler::tick() {
                     Logger::warning("WiFi", "Buffer overflow, dropping chunk.");
                 }
             }
+        }
+
+        // Watchdog check
+        if (millis() - _lastHeartbeatTime > 3000) {
+            Logger::error("WiFi", "WATCHDOG TIMEOUT! No heartbeat received.");
+            EmergencyController::triggerEmergencyStop();
+            _client.stop(); // Drop client
         }
     }
 }

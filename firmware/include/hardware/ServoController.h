@@ -10,6 +10,7 @@ public:
     static int getAngle(int servoId);
     static void home();
     static void stop();
+    static void tick(); // For smooth interpolation
 
 private:
     static Servo _base;
@@ -18,7 +19,9 @@ private:
     static Servo _wrist;
     static Servo _gripper;
     
-    static int _angles[5]; // 0:Base, 1:Shoulder, 2:Elbow, 3:Wrist, 4:Gripper
+    static int _angles[5]; // Current angles
+    static int _targetAngles[5]; // Target angles
+    static unsigned long _lastTickTime;
 };
 
 #endif // SERVO_CONTROLLER_H

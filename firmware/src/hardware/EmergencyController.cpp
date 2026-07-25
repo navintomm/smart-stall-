@@ -2,6 +2,7 @@
 #include "hardware/ServoController.h"
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
+#include "hardware/MotorController.h"
 #include "Logger.h"
 
 bool EmergencyController::_isEmergency = false;
@@ -16,6 +17,7 @@ void EmergencyController::triggerEmergencyStop() {
     Logger::error("HAL", "HARDWARE EMERGENCY TRIGGERED! Shutting down actuators.");
     
     // Hard kill actuators via HAL interfaces
+    MotorController::stop();
     ServoController::stop();
     PumpController::stop(0);
     PumpController::stop(1);

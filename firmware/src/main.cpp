@@ -7,6 +7,7 @@
 
 // HAL
 #include "hardware/ServoController.h"
+#include "hardware/MotorController.h"
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
 #include "hardware/SensorManager.h"
@@ -19,6 +20,7 @@ void setup() {
     
     // Initialize HAL
     ServoController::init();
+    MotorController::init();
     PumpController::init();
     BrushController::init();
     SensorManager::init();
@@ -38,10 +40,15 @@ void loop() {
     // 1. Maintain TCP connections and process incoming packets
     WifiServerHandler::tick();
     
-    // 2. Update dummy internal state (battery drain, temps) via HAL
+    // 2. Hardware non-blocking ticks
+    ServoController::tick();
+    PumpController::tick();
+    BrushController::tick();
+    
+    // 3. Update dummy internal state (battery drain, temps) via HAL
     SensorManager::update();
     
-    // 3. Broadcast telemetry 1Hz
+    // 4. Broadcast telemetry 1Hz
     TelemetryEngine::tick([](const String& outJson) {
         WifiServerHandler::sendData(outJson);
     });

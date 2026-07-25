@@ -13,8 +13,14 @@ namespace Pins {
     const int PUMP_WATER = 12;
     const int PUMP_SOAP = 13;
 
+    // Drive Motors
+    const int MOTOR_LEFT_PWM = 25;
+    const int MOTOR_LEFT_DIR = 26;
+    const int MOTOR_RIGHT_PWM = 27;
+    const int MOTOR_RIGHT_DIR = 14;
+
     // Brush Motor
-    const int MOTOR_BRUSH = 14;
+    const int MOTOR_BRUSH = 33;
 
     // Sensors
     const int SENSOR_WATER_LVL = 34; // ADC

@@ -9,6 +9,8 @@ Servo ServoController::_wrist;
 Servo ServoController::_gripper;
 
 int ServoController::_angles[5] = {90, 90, 90, 90, 90};
+int ServoController::_targetAngles[5] = {90, 90, 90, 90, 90};
+unsigned long ServoController::_lastTickTime = 0;
 
 void ServoController::init() {
     ESP32PWM::allocateTimer(0);
@@ -29,22 +31,43 @@ void ServoController::init() {
     _gripper.attach(Pins::SERVO_GRIPPER, 500, 2400);
 
     home();
+    _lastTickTime = millis();
     Logger::info("HAL", "ServoController initialized");
 }
 
 void ServoController::setAngle(int servoId, int angle) {
-    if (angle < 0) angle = 0;
-    if (angle > 180) angle = 180;
+    // Safety clamping
+    if (angle < 10) angle = 10;
+    if (angle > 170) angle = 170;
 
-    switch (servoId) {
-        case 0: _base.write(angle); break;
-        case 1: _shoulder.write(angle); break;
-        case 2: _elbow.write(angle); break;
-        case 3: _wrist.write(angle); break;
-        case 4: _gripper.write(angle); break;
-        default: return;
+    if (servoId >= 0 && servoId < 5) {
+        _targetAngles[servoId] = angle;
     }
-    _angles[servoId] = angle;
+}
+
+void ServoController::tick() {
+    unsigned long currentMillis = millis();
+    if (currentMillis - _lastTickTime > 15) { // Update every 15ms
+        _lastTickTime = currentMillis;
+
+        for (int i = 0; i < 5; i++) {
+            if (_angles[i] < _targetAngles[i]) {
+                _angles[i]++;
+            } else if (_angles[i] > _targetAngles[i]) {
+                _angles[i]--;
+            } else {
+                continue; // At target
+            }
+
+            switch (i) {
+                case 0: _base.write(_angles[i]); break;
+                case 1: _shoulder.write(_angles[i]); break;
+                case 2: _elbow.write(_angles[i]); break;
+                case 3: _wrist.write(_angles[i]); break;
+                case 4: _gripper.write(_angles[i]); break;
+            }
+        }
+    }
 }
 
 int ServoController::getAngle(int servoId) {

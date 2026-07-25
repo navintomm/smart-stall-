@@ -199,6 +199,6 @@
  .pio/libdeps/esp32dev/ESP32Servo/src/ESP32Servo.h \
  .pio/libdeps/esp32dev/ESP32Servo/src/ESP32PWM.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h \
- include/hardware/PumpController.h include/hardware/BrushController.h \
- include/hardware/SensorManager.h include/hardware/EmergencyController.h \
- include/hardware/SelfTest.h
+ include/hardware/MotorController.h include/hardware/PumpController.h \
+ include/hardware/BrushController.h include/hardware/SensorManager.h \
+ include/hardware/EmergencyController.h include/hardware/SelfTest.h

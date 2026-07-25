@@ -141,6 +141,11 @@
  include/hardware/SensorManager.h include/hardware/PumpController.h \
  include/hardware/BrushController.h \
  include/hardware/EmergencyController.h \
+ include/hardware/ServoController.h \
+ .pio/libdeps/esp32dev/ESP32Servo/src/ESP32Servo.h \
+ .pio/libdeps/esp32dev/ESP32Servo/src/ESP32PWM.h \
+ C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h \
+ include/hardware/MotorController.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \

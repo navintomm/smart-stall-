@@ -140,4 +140,4 @@
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/hardware/PumpController.h include/hardware/BrushController.h \
- include/Logger.h
+ include/hardware/MotorController.h include/Logger.h

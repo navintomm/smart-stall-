@@ -2,12 +2,20 @@
 #include "hardware/ServoController.h"
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
+#include "hardware/MotorController.h"
 #include "hardware/SensorManager.h"
 #include "Logger.h"
 #include <Arduino.h>
 
 void SelfTest::run() {
     Logger::info("SelfTest", "Starting Hardware Self-Test Sequence...");
+
+    // Test Motors
+    Logger::info("SelfTest", "Testing Drive Motors...");
+    MotorController::moveForward(100);
+    delay(200);
+    MotorController::stop();
+    delay(100);
 
     // Test Servos
     Logger::info("SelfTest", "Homing Servos...");

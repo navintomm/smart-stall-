@@ -3,6 +3,8 @@
 #include "hardware/ServoController.h"
 #include "hardware/PumpController.h"
 #include "hardware/BrushController.h"
+#include "hardware/MotorController.h"
+#include "WifiServerHandler.h"
 #include "RobotState.h"
 #include "Logger.h"
 
@@ -16,16 +18,31 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
     
     switch(cmdId) {
         case 101: // MOVE_FORWARD
-            RobotState::setMode("MOVING");
+            if (packet.payload.containsKey("speed")) {
+                MotorController::moveForward(packet.payload["speed"].as<int>());
+                RobotState::setMode("MOVING");
+            }
             break;
         case 102: // MOVE_BACKWARD
-            RobotState::setMode("MOVING");
+            if (packet.payload.containsKey("speed")) {
+                MotorController::moveBackward(packet.payload["speed"].as<int>());
+                RobotState::setMode("MOVING");
+            }
             break;
         case 103: // TURN_LEFT
+            if (packet.payload.containsKey("speed")) {
+                MotorController::turnLeft(packet.payload["speed"].as<int>());
+                RobotState::setMode("MOVING");
+            }
+            break;
         case 104: // TURN_RIGHT
-            RobotState::setMode("MOVING");
+            if (packet.payload.containsKey("speed")) {
+                MotorController::turnRight(packet.payload["speed"].as<int>());
+                RobotState::setMode("MOVING");
+            }
             break;
         case 105: // STOP
+            MotorController::stop();
             RobotState::setMode("IDLE");
             break;
             
@@ -62,6 +79,21 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
             
         default:
             Logger::warning("CmdDispatch", "Unknown Command ID.");
-            break;
+            return; // Exit without ACK if invalid
     }
+
+    // Send ACK Response
+    RobotPacket ackPacket;
+    ackPacket.type = "ack";
+    ackPacket.protocolVersion = packet.protocolVersion;
+    ackPacket.sequenceNumber = packet.sequenceNumber;
+    ackPacket.commandId = packet.commandId;
+    ackPacket.timestamp = millis();
+    
+    ackPacket.payload["status"] = "OK";
+    
+    String outJson;
+    ProtocolCodec::encode(ackPacket, outJson);
+    outJson += "\n";
+    WifiServerHandler::sendData(outJson);
 }

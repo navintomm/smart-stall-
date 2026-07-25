@@ -13,6 +13,7 @@ private:
     static WiFiServer _server;
     static WiFiClient _client;
     static String _lineBuffer;
+    static unsigned long _lastHeartbeatTime;
     
     static void processIncomingLine(const String& line);
 };
