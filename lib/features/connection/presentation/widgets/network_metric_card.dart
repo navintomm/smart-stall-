@@ -13,6 +13,7 @@ class NetworkMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      animateEntrance: true,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -32,3 +33,4 @@ class NetworkMetricCard extends StatelessWidget {
     );
   }
 }
+

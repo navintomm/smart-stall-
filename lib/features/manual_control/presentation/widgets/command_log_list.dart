@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/command_log_entry.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -15,6 +15,7 @@ class CommandLogList extends ConsumerWidget {
     final logs = state.logs;
     
     return GlassCard(
+      animateEntrance: true,
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -46,7 +47,7 @@ class _CommandLogTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(log.command, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-              Text("${log.source} • ${log.status}", style: AppTextStyles.bodyMedium.copyWith(color: Colors.black54)),
+              Text("${log.source} â€¢ ${log.status}", style: AppTextStyles.bodyMedium.copyWith(color: Colors.black54)),
             ],
           ),
         ),
@@ -55,3 +56,4 @@ class _CommandLogTile extends StatelessWidget {
     );
   }
 }
+

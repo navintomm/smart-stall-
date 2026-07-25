@@ -15,6 +15,7 @@ class RobotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOnline = robot.status == 'Online';
     return GlassCard(
+      animateEntrance: true,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
@@ -54,3 +55,4 @@ class RobotCard extends StatelessWidget {
     );
   }
 }
+

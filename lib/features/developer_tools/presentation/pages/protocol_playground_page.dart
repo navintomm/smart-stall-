@@ -5,8 +5,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
-import '../../../../core/communication/protocol/v1/v1_command.dart';
-import '../../../../core/communication/protocol/v1/validator/protocol_validator.dart';
+import '../../../../core/communication/protocol/models/base_packet.dart';
+import '../../../../core/communication/protocol/models/packet_type.dart';
+import '../../../../core/communication/protocol/catalogues/command_catalog.dart';
+import '../../../../core/communication/protocol/validator/protocol_validator.dart';
+import '../../../../core/communication/protocol/protocol_codec.dart';
 
 class ProtocolPlaygroundPage extends ConsumerStatefulWidget {
   const ProtocolPlaygroundPage({super.key});
@@ -19,6 +22,8 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
   final _jsonController = TextEditingController();
   String _validationResult = '';
   Color _validationColor = Colors.grey;
+  CommandDefinition _selectedCommand = CommandCatalog.moveForward;
+  final ProtocolCodec _codec = ProtocolCodec();
 
   @override
   void initState() {
@@ -27,19 +32,26 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
   }
 
   void _generateMockCommand() {
-    final cmd = V1Command(
-      commandId: 1001,
-      commandType: 'MOVE_SERVO',
-      payload: {'id': 'joint_1', 'angle': 45},
+    final payload = <String, dynamic>{};
+    for (var key in _selectedCommand.requiredPayloadKeys) {
+      payload[key] = 0; // Default placeholder
+    }
+
+    final cmd = RobotPacket(
+      type: PacketType.command,
+      commandId: _selectedCommand.id,
+      sequenceNumber: 1,
       timestamp: DateTime.now().millisecondsSinceEpoch,
+      payload: payload,
+      crc: ProtocolValidator.calculateChecksum(payload),
     );
-    _jsonController.text = const JsonEncoder.withIndent('  ').convert(cmd.toJson());
+    _jsonController.text = _codec.prettyPrint(cmd);
   }
 
   void _validatePacket() {
     final jsonStr = _jsonController.text;
     
-    if (!ProtocolValidator.validateCommandSize(jsonStr)) {
+    if (!ProtocolValidator.validateLength(jsonStr)) {
       setState(() {
         _validationResult = 'ERROR: Payload exceeds size limit!';
         _validationColor = AppColors.dangerRed;
@@ -51,15 +63,35 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       if (!ProtocolValidator.validateRequiredFields(map)) {
         setState(() {
-          _validationResult = 'ERROR: Missing required V1Command fields.';
+          _validationResult = 'ERROR: Missing required fields (ver, type, seq, ts, data, crc).';
           _validationColor = AppColors.dangerRed;
         });
         return;
       }
+
+      final packet = RobotPacket.fromJson(map);
       
-      final checksum = ProtocolValidator.calculateChecksum(jsonStr);
+      if (!ProtocolValidator.validateChecksum(map, packet.crc)) {
+        setState(() {
+          _validationResult = 'ERROR: CRC Checksum mismatch.';
+          _validationColor = AppColors.dangerRed;
+        });
+        return;
+      }
+
+      if (packet.type == PacketType.command) {
+        final payloadError = ProtocolValidator.validateCommandPayload(packet);
+        if (payloadError != null) {
+          setState(() {
+            _validationResult = 'ERROR: $payloadError';
+            _validationColor = AppColors.warningOrange;
+          });
+          return;
+        }
+      }
+      
       setState(() {
-        _validationResult = 'SUCCESS: Packet is valid.\\nChecksum: $checksum';
+        _validationResult = 'SUCCESS: Packet is perfectly valid and ready for transmission.';
         _validationColor = AppColors.successGreen;
       });
     } catch (e) {
@@ -79,7 +111,26 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('V1 Command Builder', style: AppTextStyles.displayMedium),
+            DropdownButton<CommandDefinition>(
+              value: _selectedCommand,
+              isExpanded: true,
+              items: CommandCatalog.allCommands.map((cmd) {
+                return DropdownMenuItem(
+                  value: cmd,
+                  child: Text(cmd.name),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedCommand = val;
+                    _generateMockCommand();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text('Packet Editor', style: AppTextStyles.displayMedium),
             const SizedBox(height: AppSpacing.md),
             GlassCard(
               child: Padding(
@@ -105,7 +156,7 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
                       padding: const EdgeInsets.all(AppSpacing.md),
                       backgroundColor: Colors.black12,
                     ),
-                    child: const Text('Generate Mock'),
+                    child: const Text('Reset to Default'),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -140,4 +191,3 @@ class _ProtocolPlaygroundPageState extends ConsumerState<ProtocolPlaygroundPage>
     );
   }
 }
-

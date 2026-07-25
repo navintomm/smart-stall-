@@ -5,25 +5,39 @@ import 'app_colors.dart';
 class AppTextStyles {
   static TextStyle get displayLarge => GoogleFonts.inter(
         fontSize: 32,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
+        color: AppColors.text,
+        letterSpacing: -0.5,
+      );
+
+  static TextStyle get displayMedium => GoogleFonts.inter(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: AppColors.text,
+        letterSpacing: -0.5,
+      );
+      
+  static TextStyle get titleLarge => GoogleFonts.inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
         color: AppColors.text,
       );
 
-    static TextStyle get displayMedium => GoogleFonts.inter(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.text,
-      );
   static TextStyle get bodyLarge => GoogleFonts.inter(
         fontSize: 16,
-        fontWeight: FontWeight.normal,
+        fontWeight: FontWeight.w500,
         color: AppColors.text,
       );
       
   static TextStyle get bodyMedium => GoogleFonts.inter(
         fontSize: 14,
-        fontWeight: FontWeight.normal,
-        color: AppColors.text,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+      );
+      
+  static TextStyle get bodySmall => GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textMuted,
       );
 }
-

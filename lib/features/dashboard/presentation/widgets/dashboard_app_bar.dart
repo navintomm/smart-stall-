@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/routing/app_routes.dart';
 import '../../../../shared/widgets/feedback/status_chip.dart';
 import '../../../../shared/widgets/foundation/glass_icon_button.dart';
+import '../../../developer_tools/presentation/developer_dashboard_screen.dart';
 
 class DashboardAppBar extends StatelessWidget {
   const DashboardAppBar({super.key});
@@ -35,6 +36,13 @@ class DashboardAppBar extends StatelessWidget {
               const StatusChip(label: 'Connected', color: AppColors.successGreen),
               const SizedBox(width: AppSpacing.sm),
               GlassIconButton(
+                icon: const Icon(Icons.developer_board, color: AppColors.secondary),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const DeveloperDashboardScreen()));
+                },
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              GlassIconButton(
                 icon: const Icon(AppIcons.settings, color: AppColors.primary),
                 onPressed: () => context.push(AppRoutes.settings),
               ),
@@ -45,4 +53,5 @@ class DashboardAppBar extends StatelessWidget {
     );
   }
 }
+
 

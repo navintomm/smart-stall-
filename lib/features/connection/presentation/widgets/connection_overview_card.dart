@@ -13,6 +13,7 @@ class ConnectionOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      animateEntrance: true,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -79,4 +80,5 @@ class _StatItem extends StatelessWidget {
     );
   }
 }
+
 

@@ -9,6 +9,7 @@ class SystemInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const GlassCard(
+      animateEntrance: true,
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -28,3 +29,4 @@ class SystemInfoCard extends StatelessWidget {
     );
   }
 }
+

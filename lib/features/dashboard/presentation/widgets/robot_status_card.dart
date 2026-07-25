@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -19,6 +19,7 @@ class RobotStatusCard extends ConsumerWidget {
     if (status == null) return const CircularProgressIndicator();
 
     return GlassCard(
+      animateEntrance: true,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -31,7 +32,7 @@ class RobotStatusCard extends ConsumerWidget {
                   children: [
                     const Icon(AppIcons.robot, size: 32, color: AppColors.primary),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(status.id, style: AppTextStyles.displayMedium),
+                    Text(status.id, style: AppTextStyles.displayLarge),
                   ],
                 ),
                 StatusIndicator(color: status.state == 'ACTIVE' ? AppColors.successGreen : AppColors.warningOrange),
@@ -66,8 +67,9 @@ class _StatusItem extends StatelessWidget {
       children: [
         Text(label, style: AppTextStyles.bodyMedium),
         const SizedBox(height: AppSpacing.xs),
-        Text(value, style: AppTextStyles.bodyLarge),
+        Text(value, style: AppTextStyles.titleLarge),
       ],
     );
   }
 }
+
