@@ -9,8 +9,8 @@ import '../simulation/diagnostics_simulator.dart';
 
 // Transports & Protocol
 import '../communication/transports/wifi_transport.dart';
-import '../communication/protocol/command_encoder.dart';
-import '../communication/protocol/message_parser.dart';
+import '../communication/protocol/protocol_codec.dart';
+
 
 // Repository Interfaces
 import '../repositories/robot_repository.dart';
@@ -54,8 +54,8 @@ final diagnosticsSimulatorProvider = Provider<DiagnosticsSimulator>((ref) {
 
 // Transport Singletons
 final activeTransportProvider = Provider((ref) => WifiTransport());
-final commandEncoderProvider = Provider((ref) => CommandEncoder());
-final messageParserProvider = Provider((ref) => MessageParser());
+final protocolCodecProvider = Provider((ref) => ProtocolCodec());
+
 
 // Smart Repositories (Switch based on Developer Mode)
 final robotRepositoryProvider = Provider<RobotRepository>((ref) {
@@ -63,7 +63,7 @@ final robotRepositoryProvider = Provider<RobotRepository>((ref) {
   if (isSim) {
     return MockRobotRepository(ref.watch(robotSimulatorProvider));
   } else {
-    return HardwareRobotRepository(ref.watch(activeTransportProvider), ref.watch(commandEncoderProvider));
+    return HardwareRobotRepository(ref.watch(activeTransportProvider), ref.watch(protocolCodecProvider));
   }
 });
 
@@ -81,7 +81,7 @@ final telemetryRepositoryProvider = Provider<TelemetryRepository>((ref) {
   if (isSim) {
     return MockTelemetryRepository(ref.watch(telemetrySimulatorProvider));
   } else {
-    return HardwareTelemetryRepository(ref.watch(activeTransportProvider), ref.watch(messageParserProvider));
+    return HardwareTelemetryRepository(ref.watch(activeTransportProvider), ref.watch(protocolCodecProvider));
   }
 });
 
@@ -90,6 +90,7 @@ final diagnosticsRepositoryProvider = Provider<DiagnosticsRepository>((ref) {
   if (isSim) {
     return MockDiagnosticsRepository(ref.watch(diagnosticsSimulatorProvider));
   } else {
-    return HardwareDiagnosticsRepository(ref.watch(activeTransportProvider), ref.watch(messageParserProvider));
+    return HardwareDiagnosticsRepository(ref.watch(activeTransportProvider), ref.watch(protocolCodecProvider));
   }
 });
+
