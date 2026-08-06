@@ -1,3 +1,4 @@
+
 ﻿# SmartStall Operator
 
 A mobile application used to control and monitor a semi-automatic robotic toilet cleaning system.
