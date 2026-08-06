@@ -9,6 +9,7 @@ import 'widgets/system_overview_section.dart';
 import 'widgets/recent_activity_list.dart';
 import 'widgets/emergency_stop_card.dart';
 import 'widgets/safety_alert_banner.dart';
+import 'widgets/autonomous_cleaning_section.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -38,6 +39,11 @@ class DashboardScreen extends StatelessWidget {
                       const RobotStatusCard(),
                       const SizedBox(height: AppSpacing.lg),
                       
+                      const SectionHeader(title: 'Autonomous Cleaning'),
+                      const SizedBox(height: AppSpacing.sm),
+                      const AutonomousCleaningSection(),
+                      const SizedBox(height: AppSpacing.lg),
+
                       if (isDesktop || isTablet)
                         _buildMultiColumnLayout()
                       else

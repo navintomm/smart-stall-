@@ -13,6 +13,7 @@
 #include "hardware/SensorManager.h"
 #include "hardware/EmergencyController.h"
 #include "hardware/SelfTest.h"
+#include "hardware/CleaningController.h"
 
 void setup() {
     Logger::init(115200);
@@ -25,6 +26,7 @@ void setup() {
     BrushController::init();
     SensorManager::init();
     EmergencyController::init();
+    CleaningController::init();
 
     // Run Hardware Self-Test
     SelfTest::run();
@@ -45,6 +47,7 @@ void loop() {
     ServoController::tick();
     PumpController::tick();
     BrushController::tick();
+    CleaningController::tick();
     
     // 3. Update dummy internal state (battery drain, temps) via HAL
     SensorManager::update();

@@ -16,12 +16,14 @@ class HardwareRobotRepository implements RobotRepository {
 
   @override
   Future<void> sendCommand(String command, Map<String, dynamic> payload) async {
-    // Map string command to V2 integer ID
     int cmdId = 0;
-    if (command == 'MOVE_SERVO') cmdId = CommandCatalog.baseRotation.id; // generic map for now
-    if (command == 'TOGGLE_TOOL') cmdId = CommandCatalog.waterPump.id;
-    if (command == 'EMERGENCY_STOP') cmdId = CommandCatalog.emergencyStop.id;
-    if (command == 'STOP') cmdId = CommandCatalog.stop.id;
+    try {
+      cmdId = CommandCatalog.allCommands.firstWhere((cmd) => cmd.name == command).id;
+    } catch (_) {
+      // Fallback manual maps just in case
+      if (command == 'MOVE_SERVO') cmdId = CommandCatalog.baseRotation.id;
+      if (command == 'TOGGLE_TOOL') cmdId = CommandCatalog.waterPump.id;
+    }
 
     final packet = RobotPacket(
       type: PacketType.command,

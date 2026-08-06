@@ -8,6 +8,7 @@
 #include "hardware/EmergencyController.h"
 #include "hardware/ServoController.h"
 #include "hardware/MotorController.h"
+#include "hardware/CleaningController.h"
 #include "config/pin_map.h"
 #include <WiFi.h>
 
@@ -60,6 +61,10 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         #endif
 
         packet.payload["mode"] = RobotState::getMode();
+        packet.payload["clean_state"] = CleaningController::getStateName();
+        packet.payload["clean_step"] = CleaningController::getStepName();
+        packet.payload["clean_prog"] = CleaningController::getProgress();
+        packet.payload["clean_rem"] = CleaningController::getTimeRemaining();
         packet.payload["uptime"] = currentMillis / 1000;
 
         String outJson;

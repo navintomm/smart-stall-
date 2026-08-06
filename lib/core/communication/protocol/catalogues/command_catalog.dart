@@ -1,4 +1,4 @@
-﻿class CommandDefinition {
+class CommandDefinition {
   final int id;
   final String name;
   final String category;
@@ -47,11 +47,18 @@ class CommandCatalog {
   static const homePosition = CommandDefinition(id: 405, name: 'HOME_POSITION', category: 'System', timeoutMs: 5000);
   static const ping = CommandDefinition(id: 406, name: 'PING', category: 'System', timeoutMs: 500);
 
+  // Cleaning
+  static const startCleaning = CommandDefinition(id: 501, name: 'START_CLEANING', category: 'Cleaning');
+  static const pauseCleaning = CommandDefinition(id: 502, name: 'PAUSE_CLEANING', category: 'Cleaning');
+  static const resumeCleaning = CommandDefinition(id: 503, name: 'RESUME_CLEANING', category: 'Cleaning');
+  static const stopCleaning = CommandDefinition(id: 504, name: 'STOP_CLEANING', category: 'Cleaning');
+
   static const List<CommandDefinition> allCommands = [
     moveForward, moveBackward, turnLeft, turnRight, stop,
     baseRotation, shoulder, elbow, wrist, gripper,
     waterPump, soapPump, brushMotor, brushRotation,
     emergencyStop, resume, restart, calibration, homePosition, ping,
+    startCleaning, pauseCleaning, resumeCleaning, stopCleaning,
   ];
 
   static CommandDefinition? getById(int id) {

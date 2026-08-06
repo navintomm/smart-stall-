@@ -36,6 +36,9 @@ class TelemetryMonitorCard extends ConsumerWidget {
               _buildTelemetryRow('Obstacle Dist', getVal('obs', 'Unknown')),
               _buildTelemetryRow('Signal Strength', getVal('rssi', 'Unknown')),
               _buildTelemetryRow('Emergency State', getVal('emg', 'INACTIVE')),
+              _buildTelemetryRow('Clean State', getVal('clean_state', 'IDLE')),
+              _buildTelemetryRow('Clean Step', getVal('clean_step', 'Idle')),
+              _buildTelemetryRow('Clean Prog', '${getVal('clean_prog', '0')}%'),
             ],
           );
         }

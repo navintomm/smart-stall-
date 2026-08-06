@@ -5,6 +5,7 @@
 #include "hardware/BrushController.h"
 #include "hardware/MotorController.h"
 #include "hardware/SensorManager.h"
+#include "hardware/CleaningController.h"
 #include "WifiServerHandler.h"
 #include "RobotState.h"
 #include "Logger.h"
@@ -101,6 +102,23 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
             break;
         case 406: // PING
             Logger::info("CmdDispatch", "PING received.");
+            break;
+            
+        case 501: // START_CLEANING
+            CleaningController::start();
+            RobotState::setMode("AUTO_CLEAN");
+            break;
+        case 502: // PAUSE_CLEANING
+            CleaningController::pause();
+            RobotState::setMode("PAUSED");
+            break;
+        case 503: // RESUME_CLEANING
+            CleaningController::resume();
+            RobotState::setMode("AUTO_CLEAN");
+            break;
+        case 504: // STOP_CLEANING
+            CleaningController::stop();
+            RobotState::setMode("IDLE");
             break;
             
         default:

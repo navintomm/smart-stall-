@@ -19,6 +19,10 @@ class TelemetryPayload {
   final int motorSpeed;
   final String motorDirection;
   final List<int> servoAngles;
+  final String cleanState;
+  final String cleanStep;
+  final int cleanProg;
+  final int cleanRem;
 
   const TelemetryPayload({
     this.batteryPercentage = 0.0,
@@ -41,6 +45,10 @@ class TelemetryPayload {
     this.motorSpeed = 0,
     this.motorDirection = 'STOP',
     this.servoAngles = const [90, 90, 90, 90, 90],
+    this.cleanState = 'IDLE',
+    this.cleanStep = 'Idle',
+    this.cleanProg = 0,
+    this.cleanRem = 0,
   });
 
   factory TelemetryPayload.fromJson(Map<String, dynamic> json) {
@@ -65,6 +73,10 @@ class TelemetryPayload {
       motorSpeed: json['motor_speed'] as int? ?? 0,
       motorDirection: json['motor_dir'] as String? ?? 'STOP',
       servoAngles: (json['servos'] as List<dynamic>?)?.map((e) => e as int).toList() ?? const [90, 90, 90, 90, 90],
+      cleanState: json['clean_state'] as String? ?? 'IDLE',
+      cleanStep: json['clean_step'] as String? ?? 'Idle',
+      cleanProg: json['clean_prog'] as int? ?? 0,
+      cleanRem: json['clean_rem'] as int? ?? 0,
     );
   }
 }

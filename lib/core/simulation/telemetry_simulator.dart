@@ -22,6 +22,10 @@ class TelemetrySimulator {
         'temp': "${35 + _random.nextInt(5)} C",
         'obs': "${50 + _random.nextInt(100)} cm",
         'rssi': "-${60 + _random.nextInt(15)} dBm",
+        'clean_state': 'WETTING',
+        'clean_step': 'Spraying Water',
+        'clean_prog': '${20 + _random.nextInt(5)}',
+        'clean_rem': '${40 - _random.nextInt(5)}',
       });
     });
   }
