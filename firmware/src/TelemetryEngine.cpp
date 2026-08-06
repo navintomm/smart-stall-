@@ -63,8 +63,11 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         packet.payload["mode"] = RobotState::getMode();
         packet.payload["clean_state"] = CleaningController::getStateName();
         packet.payload["clean_step"] = CleaningController::getStepName();
-        packet.payload["clean_prog"] = CleaningController::getProgress();
-        packet.payload["clean_rem"] = CleaningController::getTimeRemaining();
+        packet.payload["clean_progress"] = CleaningController::getProgress();
+        packet.payload["clean_remaining"] = CleaningController::getTimeRemaining();
+        packet.payload["clean_elapsed"] = CleaningController::getElapsedTime();
+        packet.payload["clean_cycle"] = CleaningController::getCycleCount();
+        packet.payload["abort_reason"] = CleaningController::getAbortReason();
         packet.payload["uptime"] = currentMillis / 1000;
 
         String outJson;

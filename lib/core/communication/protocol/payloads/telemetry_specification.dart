@@ -21,8 +21,11 @@ class TelemetryPayload {
   final List<int> servoAngles;
   final String cleanState;
   final String cleanStep;
-  final int cleanProg;
-  final int cleanRem;
+  final int cleanProgress;
+  final int cleanRemaining;
+  final int cleanElapsed;
+  final int cleanCycle;
+  final String abortReason;
 
   const TelemetryPayload({
     this.batteryPercentage = 0.0,
@@ -47,8 +50,11 @@ class TelemetryPayload {
     this.servoAngles = const [90, 90, 90, 90, 90],
     this.cleanState = 'IDLE',
     this.cleanStep = 'Idle',
-    this.cleanProg = 0,
-    this.cleanRem = 0,
+    this.cleanProgress = 0,
+    this.cleanRemaining = 0,
+    this.cleanElapsed = 0,
+    this.cleanCycle = 0,
+    this.abortReason = '',
   });
 
   factory TelemetryPayload.fromJson(Map<String, dynamic> json) {
@@ -75,8 +81,11 @@ class TelemetryPayload {
       servoAngles: (json['servos'] as List<dynamic>?)?.map((e) => e as int).toList() ?? const [90, 90, 90, 90, 90],
       cleanState: json['clean_state'] as String? ?? 'IDLE',
       cleanStep: json['clean_step'] as String? ?? 'Idle',
-      cleanProg: json['clean_prog'] as int? ?? 0,
-      cleanRem: json['clean_rem'] as int? ?? 0,
+      cleanProgress: json['clean_progress'] as int? ?? 0,
+      cleanRemaining: json['clean_remaining'] as int? ?? 0,
+      cleanElapsed: json['clean_elapsed'] as int? ?? 0,
+      cleanCycle: json['clean_cycle'] as int? ?? 0,
+      abortReason: json['abort_reason'] as String? ?? '',
     );
   }
 }

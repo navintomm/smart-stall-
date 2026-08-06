@@ -52,4 +52,24 @@ class HardwareRobotRepository implements RobotRepository {
   Future<void> triggerEmergencyStop() async {
     await sendCommand('EMERGENCY_STOP', {});
   }
+
+  @override
+  Future<void> startCleaning() async {
+    await sendCommand('START_CLEANING', {});
+  }
+
+  @override
+  Future<void> pauseCleaning() async {
+    await sendCommand('PAUSE_CLEANING', {});
+  }
+
+  @override
+  Future<void> resumeCleaning() async {
+    await sendCommand('RESUME_CLEANING', {});
+  }
+
+  @override
+  Future<void> stopCleaning() async {
+    await sendCommand('STOP_CLEANING', {});
+  }
 }

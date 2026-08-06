@@ -22,8 +22,8 @@ class AutonomousCleaningSection extends ConsumerWidget {
         
         String cleanState = data.firstWhere((s) => s.id == 'clean_state', orElse: () => const SensorData(id: 'clean_state', name: '', value: 'IDLE')).value;
         String cleanStep = data.firstWhere((s) => s.id == 'clean_step', orElse: () => const SensorData(id: 'clean_step', name: '', value: 'Idle')).value;
-        int cleanProg = int.tryParse(data.firstWhere((s) => s.id == 'clean_prog', orElse: () => const SensorData(id: 'clean_prog', name: '', value: '0')).value) ?? 0;
-        int cleanRem = int.tryParse(data.firstWhere((s) => s.id == 'clean_rem', orElse: () => const SensorData(id: 'clean_rem', name: '', value: '0')).value) ?? 0;
+        int cleanProgress = int.tryParse(data.firstWhere((s) => s.id == 'clean_progress', orElse: () => const SensorData(id: 'clean_progress', name: '', value: '0')).value) ?? 0;
+        int cleanRemaining = int.tryParse(data.firstWhere((s) => s.id == 'clean_remaining', orElse: () => const SensorData(id: 'clean_remaining', name: '', value: '0')).value) ?? 0;
 
         return GlassCard(
           child: Column(
@@ -39,19 +39,23 @@ class AutonomousCleaningSection extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              LinearProgressIndicator(
-                value: cleanProg / 100.0,
-                backgroundColor: AppColors.textMuted.withOpacity(0.2),
-                color: AppColors.primary,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: cleanProgress / 100.0),
+                duration: const Duration(milliseconds: 500),
+                builder: (context, value, _) => LinearProgressIndicator(
+                  value: value,
+                  backgroundColor: AppColors.textMuted.withOpacity(0.2),
+                  color: AppColors.primary,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$cleanProg%', style: AppTextStyles.bodySmall),
-                  Text('${cleanRem}s remaining', style: AppTextStyles.bodySmall),
+                  Text('$cleanProgress%', style: AppTextStyles.bodySmall),
+                  Text('${cleanRemaining}s remaining', style: AppTextStyles.bodySmall),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -59,25 +63,25 @@ class AutonomousCleaningSection extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton.icon(
-                    onPressed: () => robotController.sendCommand('START_CLEANING', {}),
+                    onPressed: () => robotController.startCleaning(),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Start'),
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.successGreen, foregroundColor: Colors.white),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () => robotController.sendCommand('PAUSE_CLEANING', {}),
+                    onPressed: () => robotController.pauseCleaning(),
                     icon: const Icon(Icons.pause),
                     label: const Text('Pause'),
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.warningOrange, foregroundColor: Colors.white),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () => robotController.sendCommand('RESUME_CLEANING', {}),
+                    onPressed: () => robotController.resumeCleaning(),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Resume'),
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.robotBlue, foregroundColor: Colors.white),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () => robotController.sendCommand('STOP_CLEANING', {}),
+                    onPressed: () => robotController.stopCleaning(),
                     icon: const Icon(Icons.stop),
                     label: const Text('Stop'),
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.dangerRed, foregroundColor: Colors.white),
