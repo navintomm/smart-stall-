@@ -9,6 +9,12 @@
 #include "hardware/ServoController.h"
 #include "hardware/MotorController.h"
 #include "hardware/CleaningController.h"
+#include "vision/CameraManager.h"
+#include "vision/LocalizationEngine.h"
+#include "vision/AlignmentEngine.h"
+#include "vision/PoseEstimator.h"
+#include "navigation/MissionPlanner.h"
+#include "navigation/NavigationController.h"
 #include "config/pin_map.h"
 #include <WiFi.h>
 
@@ -68,6 +74,35 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         packet.payload["clean_elapsed"] = CleaningController::getElapsedTime();
         packet.payload["clean_cycle"] = CleaningController::getCycleCount();
         packet.payload["abort_reason"] = CleaningController::getAbortReason();
+        
+        packet.payload["cam_status"] = CameraManager::isHealthy() ? "OK" : "ERROR";
+        packet.payload["cam_fps"] = CameraManager::getFPS();
+        packet.payload["marker_id"] = LocalizationEngine::getMarkerId();
+        
+        Pose pose = PoseEstimator::getLatestPose();
+        packet.payload["marker_dist"] = pose.distance;
+        packet.payload["marker_conf"] = LocalizationEngine::getConfidence();
+        packet.payload["loc_state"] = LocalizationEngine::getStateName();
+        
+        AlignmentData align = AlignmentEngine::getAlignment();
+        packet.payload["align_score"] = align.alignmentScore;
+        packet.payload["pose_x"] = pose.x;
+        packet.payload["pose_y"] = pose.y;
+        packet.payload["pose_z"] = pose.z;
+        packet.payload["pose_roll"] = pose.roll;
+        packet.payload["pose_pitch"] = pose.pitch;
+        packet.payload["pose_yaw"] = pose.yaw;
+        packet.payload["last_det_time"] = LocalizationEngine::getLastDetectionTime();
+        
+        packet.payload["mission_state"] = MissionPlanner::getStateName();
+        packet.payload["current_waypoint"] = MissionPlanner::getCurrentWaypointId();
+        packet.payload["target_waypoint"] = MissionPlanner::getTargetWaypointId();
+        packet.payload["navigation_progress"] = MissionPlanner::getNavigationProgress();
+        packet.payload["distance_remaining"] = NavigationController::getDistanceRemaining();
+        packet.payload["mission_time"] = MissionPlanner::getMissionTime();
+        packet.payload["mission_count"] = MissionPlanner::getMissionCount();
+        packet.payload["nav_state"] = NavigationController::getStateName();
+
         packet.payload["uptime"] = currentMillis / 1000;
 
         String outJson;

@@ -4,6 +4,8 @@
 #include "hardware/MotorController.h"
 #include "hardware/SensorManager.h"
 #include "hardware/EmergencyController.h"
+#include "vision/LocalizationEngine.h"
+#include "vision/AlignmentEngine.h"
 #include "Logger.h"
 
 CleaningState CleaningController::currentState = STATE_IDLE;
@@ -31,6 +33,13 @@ void CleaningController::init() {
 
 void CleaningController::start() {
     if (currentState == STATE_IDLE || currentState == STATE_COMPLETED || currentState == STATE_ERROR) {
+        if (LocalizationEngine::getState() != LOC_READY || !AlignmentEngine::isAligned()) {
+            Logger::error("CleaningEngine", "Cannot start. Localization not ready or not aligned.");
+            abortReason = "Alignment Required";
+            setState(STATE_ERROR, "Error: Not Aligned");
+            return;
+        }
+
         cleaningStartTime = millis();
         abortReason = "";
         setState(STATE_PREPARING, "Initializing");
@@ -124,7 +133,12 @@ void CleaningController::executePreparing(unsigned long elapsed) {
 
 void CleaningController::executeWetting(unsigned long elapsed) {
     PumpController::start(0); // Water
-    MotorController::moveForward(50);
+    
+    if (LocalizationEngine::getState() != LOC_LOST) {
+        MotorController::moveForward(50);
+    } else {
+        MotorController::stop();
+    }
     
     if (elapsed > 4000) {
         PumpController::stop(0);
@@ -136,10 +150,14 @@ void CleaningController::executeWetting(unsigned long elapsed) {
 void CleaningController::executeBrushing(unsigned long elapsed) {
     PumpController::start(1); // Soap
     BrushController::start();
-    MotorController::turnLeft(50);
     
-    if (elapsed > 2000 && elapsed < 4000) {
-        MotorController::turnRight(50);
+    if (LocalizationEngine::getState() != LOC_LOST) {
+        MotorController::turnLeft(50);
+        if (elapsed > 2000 && elapsed < 4000) {
+            MotorController::turnRight(50);
+        }
+    } else {
+        MotorController::stop();
     }
     
     if (elapsed > 6000) {
@@ -151,7 +169,12 @@ void CleaningController::executeBrushing(unsigned long elapsed) {
 
 void CleaningController::executeScrubbing(unsigned long elapsed) {
     BrushController::start();
-    MotorController::moveForward(40);
+    
+    if (LocalizationEngine::getState() != LOC_LOST) {
+        MotorController::moveForward(40);
+    } else {
+        MotorController::stop();
+    }
     
     if (elapsed > 5000) {
         BrushController::stop();
@@ -162,7 +185,12 @@ void CleaningController::executeScrubbing(unsigned long elapsed) {
 
 void CleaningController::executeRinsing(unsigned long elapsed) {
     PumpController::start(0); // Water
-    MotorController::moveBackward(50);
+    
+    if (LocalizationEngine::getState() != LOC_LOST) {
+        MotorController::moveBackward(50);
+    } else {
+        MotorController::stop();
+    }
     
     if (elapsed > 4000) {
         PumpController::stop(0);

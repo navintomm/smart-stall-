@@ -8,6 +8,9 @@ import 'widgets/telemetry_monitor_card.dart';
 import 'widgets/communication_log_card.dart';
 import 'widgets/developer_settings_card.dart';
 import 'widgets/performance_panel_card.dart';
+import 'widgets/cleaning_diagnostics_card.dart';
+import 'widgets/vision_diagnostics_card.dart';
+import 'widgets/navigation_diagnostics_card.dart';
 import 'pages/protocol_playground_page.dart';
 
 class DeveloperDashboardScreen extends ConsumerWidget {
@@ -77,6 +80,12 @@ class DeveloperDashboardScreen extends ConsumerWidget {
                   SystemOverviewCard(),
                   SizedBox(height: AppSpacing.xl),
                   PerformancePanelCard(),
+                  SizedBox(height: AppSpacing.xl),
+                  NavigationDiagnosticsCard(),
+                  SizedBox(height: AppSpacing.xl),
+                  VisionDiagnosticsCard(),
+                  SizedBox(height: AppSpacing.xl),
+                  CleaningDiagnosticsCard(),
                   SizedBox(height: AppSpacing.xl),
                   DeveloperSettingsCard(),
                   SizedBox(height: AppSpacing.xl),

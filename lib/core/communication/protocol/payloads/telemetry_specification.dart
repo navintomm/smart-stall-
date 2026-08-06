@@ -26,6 +26,29 @@ class TelemetryPayload {
   final int cleanElapsed;
   final int cleanCycle;
   final String abortReason;
+  final String camStatus;
+  final int camFps;
+  final int markerId;
+  final double markerDist;
+  final double markerConf;
+  final String locState;
+  final int alignScore;
+  final double poseX;
+  final double poseY;
+  final double poseZ;
+  final double poseRoll;
+  final double posePitch;
+  final double poseYaw;
+  final int lastDetTime;
+  
+  final String missionState;
+  final int currentWaypoint;
+  final int targetWaypoint;
+  final int navigationProgress;
+  final double distanceRemaining;
+  final int missionTime;
+  final int missionCount;
+  final String navState;
 
   const TelemetryPayload({
     this.batteryPercentage = 0.0,
@@ -55,6 +78,28 @@ class TelemetryPayload {
     this.cleanElapsed = 0,
     this.cleanCycle = 0,
     this.abortReason = '',
+    this.camStatus = 'UNKNOWN',
+    this.camFps = 0,
+    this.markerId = 0,
+    this.markerDist = 0.0,
+    this.markerConf = 0.0,
+    this.locState = 'UNKNOWN',
+    this.alignScore = 0,
+    this.poseX = 0.0,
+    this.poseY = 0.0,
+    this.poseZ = 0.0,
+    this.poseRoll = 0.0,
+    this.posePitch = 0.0,
+    this.poseYaw = 0.0,
+    this.lastDetTime = 0,
+    this.missionState = 'IDLE',
+    this.currentWaypoint = -1,
+    this.targetWaypoint = -1,
+    this.navigationProgress = 0,
+    this.distanceRemaining = 0.0,
+    this.missionTime = 0,
+    this.missionCount = 0,
+    this.navState = 'IDLE',
   });
 
   factory TelemetryPayload.fromJson(Map<String, dynamic> json) {
@@ -71,7 +116,7 @@ class TelemetryPayload {
       cpuUsage: (json['cpu'] ?? 0).toDouble(),
       memoryUsage: (json['mem'] ?? 0).toDouble(),
       robotMode: json['mode'] as String? ?? 'IDLE',
-      emergencyStatus: json['emg'] as bool? ?? false, // changed to emg
+      emergencyStatus: json['emg'] as bool? ?? false,
       emergencySwitch: json['emg_sw'] as bool? ?? false,
       firmwareVersion: json['fw'] as String? ?? '0.0.0',
       systemUptime: json['uptime'] as int? ?? 0,
@@ -86,6 +131,28 @@ class TelemetryPayload {
       cleanElapsed: json['clean_elapsed'] as int? ?? 0,
       cleanCycle: json['clean_cycle'] as int? ?? 0,
       abortReason: json['abort_reason'] as String? ?? '',
+      camStatus: json['cam_status'] as String? ?? 'UNKNOWN',
+      camFps: json['cam_fps'] as int? ?? 0,
+      markerId: json['marker_id'] as int? ?? 0,
+      markerDist: (json['marker_dist'] ?? 0).toDouble(),
+      markerConf: (json['marker_conf'] ?? 0).toDouble(),
+      locState: json['loc_state'] as String? ?? 'UNKNOWN',
+      alignScore: json['align_score'] as int? ?? 0,
+      poseX: (json['pose_x'] ?? 0).toDouble(),
+      poseY: (json['pose_y'] ?? 0).toDouble(),
+      poseZ: (json['pose_z'] ?? 0).toDouble(),
+      poseRoll: (json['pose_roll'] ?? 0).toDouble(),
+      posePitch: (json['pose_pitch'] ?? 0).toDouble(),
+      poseYaw: (json['pose_yaw'] ?? 0).toDouble(),
+      lastDetTime: json['last_det_time'] as int? ?? 0,
+      missionState: json['mission_state'] as String? ?? 'IDLE',
+      currentWaypoint: json['current_waypoint'] as int? ?? -1,
+      targetWaypoint: json['target_waypoint'] as int? ?? -1,
+      navigationProgress: json['navigation_progress'] as int? ?? 0,
+      distanceRemaining: (json['distance_remaining'] ?? 0).toDouble(),
+      missionTime: json['mission_time'] as int? ?? 0,
+      missionCount: json['mission_count'] as int? ?? 0,
+      navState: json['nav_state'] as String? ?? 'IDLE',
     );
   }
 }

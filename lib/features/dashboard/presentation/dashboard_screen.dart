@@ -10,6 +10,9 @@ import 'widgets/recent_activity_list.dart';
 import 'widgets/emergency_stop_card.dart';
 import 'widgets/safety_alert_banner.dart';
 import 'widgets/autonomous_cleaning_section.dart';
+import 'widgets/vision_localization_card.dart';
+import 'widgets/mission_control_section.dart';
+import 'widgets/navigation_map.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -37,6 +40,19 @@ class DashboardScreen extends StatelessWidget {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       const RobotStatusCard(),
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      const SectionHeader(title: 'Mission Control'),
+                      const SizedBox(height: AppSpacing.sm),
+                      const MissionControlSection(),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      const NavigationMap(),
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      const SectionHeader(title: 'Vision & Localization'),
+                      const SizedBox(height: AppSpacing.sm),
+                      const VisionLocalizationCard(),
                       const SizedBox(height: AppSpacing.lg),
                       
                       const SectionHeader(title: 'Autonomous Cleaning'),

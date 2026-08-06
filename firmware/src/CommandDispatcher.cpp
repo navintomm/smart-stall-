@@ -6,6 +6,7 @@
 #include "hardware/MotorController.h"
 #include "hardware/SensorManager.h"
 #include "hardware/CleaningController.h"
+#include "navigation/MissionPlanner.h"
 #include "WifiServerHandler.h"
 #include "RobotState.h"
 #include "Logger.h"
@@ -118,6 +119,34 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
             break;
         case 504: // STOP_CLEANING
             CleaningController::stop();
+            RobotState::setMode("IDLE");
+            break;
+
+        case 601: { // MISSION_START
+            if (packet.payload.containsKey("waypoints")) {
+                JsonArray arr = packet.payload["waypoints"].as<JsonArray>();
+                int wps[10];
+                int count = 0;
+                for (JsonVariant v : arr) {
+                    if (count < 10) {
+                        wps[count++] = v.as<int>();
+                    }
+                }
+                MissionPlanner::startMission(wps, count);
+                RobotState::setMode("MISSION");
+            }
+            break;
+        }
+        case 602: // MISSION_PAUSE
+            MissionPlanner::pauseMission();
+            RobotState::setMode("PAUSED");
+            break;
+        case 603: // MISSION_RESUME
+            MissionPlanner::resumeMission();
+            RobotState::setMode("MISSION");
+            break;
+        case 604: // MISSION_CANCEL
+            MissionPlanner::cancelMission();
             RobotState::setMode("IDLE");
             break;
             

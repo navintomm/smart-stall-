@@ -14,6 +14,8 @@
 #include "hardware/EmergencyController.h"
 #include "hardware/SelfTest.h"
 #include "hardware/CleaningController.h"
+#include "vision/LocalizationEngine.h"
+#include "navigation/MissionPlanner.h"
 
 void setup() {
     Logger::init(115200);
@@ -27,6 +29,10 @@ void setup() {
     SensorManager::init();
     EmergencyController::init();
     CleaningController::init();
+    
+    // Initialize Vision & Navigation
+    LocalizationEngine::init();
+    MissionPlanner::init();
 
     // Run Hardware Self-Test
     SelfTest::run();
@@ -48,6 +54,10 @@ void loop() {
     PumpController::tick();
     BrushController::tick();
     CleaningController::tick();
+    
+    // 2.5 Vision & Navigation non-blocking ticks
+    LocalizationEngine::tick();
+    MissionPlanner::tick();
     
     // 3. Update dummy internal state (battery drain, temps) via HAL
     SensorManager::update();

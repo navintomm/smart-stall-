@@ -53,12 +53,19 @@ class CommandCatalog {
   static const resumeCleaning = CommandDefinition(id: 503, name: 'RESUME_CLEANING', category: 'Cleaning');
   static const stopCleaning = CommandDefinition(id: 504, name: 'STOP_CLEANING', category: 'Cleaning');
 
+  // Mission Control
+  static const missionStart = CommandDefinition(id: 601, name: 'MISSION_START', category: 'Mission', requiredPayloadKeys: ['waypoints']);
+  static const missionPause = CommandDefinition(id: 602, name: 'MISSION_PAUSE', category: 'Mission');
+  static const missionResume = CommandDefinition(id: 603, name: 'MISSION_RESUME', category: 'Mission');
+  static const missionCancel = CommandDefinition(id: 604, name: 'MISSION_CANCEL', category: 'Mission');
+
   static const List<CommandDefinition> allCommands = [
     moveForward, moveBackward, turnLeft, turnRight, stop,
     baseRotation, shoulder, elbow, wrist, gripper,
     waterPump, soapPump, brushMotor, brushRotation,
     emergencyStop, resume, restart, calibration, homePosition, ping,
     startCleaning, pauseCleaning, resumeCleaning, stopCleaning,
+    missionStart, missionPause, missionResume, missionCancel,
   ];
 
   static CommandDefinition? getById(int id) {
