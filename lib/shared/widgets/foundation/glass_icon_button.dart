@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
+
+import '../../../core/theme/app_shadows.dart';
 
 /// Purpose: A glassmorphism icon button.
 /// Usage: Icon actions inside glass interfaces.
@@ -23,10 +24,10 @@ class GlassIconButton extends StatelessWidget {
       button: true,
       enabled: onPressed != null,
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.cardGlass.withOpacity(0.5),
-          borderRadius: AppRadius.smallRadius,
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+        decoration: const BoxDecoration(
+          color: AppColors.cardGlass,
+          shape: BoxShape.circle,
+          boxShadow: AppShadows.cardShadow,
         ),
         child: IconButton(
           onPressed: onPressed,

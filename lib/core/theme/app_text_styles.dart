@@ -3,23 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
-  static TextStyle get displayLarge => GoogleFonts.inter(
+  static TextStyle get displayLarge => GoogleFonts.playfairDisplay(
         fontSize: 34,
         fontWeight: FontWeight.w700,
         color: AppColors.text,
         letterSpacing: -0.5,
       );
 
-  static TextStyle get displayMedium => GoogleFonts.inter(
+  static TextStyle get displayMedium => GoogleFonts.playfairDisplay(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: AppColors.text,
         letterSpacing: -0.5,
       );
       
-  static TextStyle get titleLarge => GoogleFonts.inter(
+  static TextStyle get titleLarge => GoogleFonts.playfairDisplay(
         fontSize: 18,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
         color: AppColors.text,
       );
 

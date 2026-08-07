@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 class AppShadows {
   static const List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: Color(0x08000000), // 3% black for ambient shadow
-      offset: Offset(0, 12),
-      blurRadius: 32,
-      spreadRadius: -4,
+      color: Color(0x06000000), // 3% black 
+      offset: Offset(0, 20),
+      blurRadius: 60,
+      spreadRadius: 10,
     ),
     BoxShadow(
-      color: Color(0x05000000), // 2% black for sharper base
+      color: Color(0x03000000), // 1% black for close base
       offset: Offset(0, 4),
-      blurRadius: 12,
-      spreadRadius: -2,
+      blurRadius: 20,
+      spreadRadius: 0,
     ),
   ];
 
   static const List<BoxShadow> glowingGreen = [
     BoxShadow(
-      color: Color(0x3322C55E), // Mint glow
+      color: Color(0x3367E279), // New Mint glow
       offset: Offset(0, 8),
       blurRadius: 24,
       spreadRadius: -4,

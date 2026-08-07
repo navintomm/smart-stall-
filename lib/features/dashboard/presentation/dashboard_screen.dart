@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/helpers/responsive_helper.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/display/section_header.dart';
 import 'widgets/dashboard_app_bar.dart';
@@ -21,6 +22,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

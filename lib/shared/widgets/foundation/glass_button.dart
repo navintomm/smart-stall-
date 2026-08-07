@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
+
 import '../../../core/theme/app_shadows.dart';
 import 'animated_scale_button.dart';
 
@@ -27,10 +27,9 @@ class GlassButton extends StatelessWidget {
       child: AnimatedScaleButton(
         onPressed: onPressed,
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.largeRadius,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
             color: AppColors.cardGlass,
-            border: Border.all(color: AppColors.borderLight, width: 1.0),
             boxShadow: AppShadows.cardShadow,
           ),
           child: ElevatedButton(
@@ -41,10 +40,8 @@ class GlassButton extends StatelessWidget {
               elevation: 0,
               splashFactory: NoSplash.splashFactory,
               overlayColor: Colors.transparent,
-              minimumSize: const Size(48, 48), // Accessibility touch target
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.largeRadius,
-              ),
+              minimumSize: const Size(56, 56), // Circle touch target
+              shape: const CircleBorder(),
             ),
             child: child,
           ),

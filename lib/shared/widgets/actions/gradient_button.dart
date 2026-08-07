@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_shadows.dart';
+
 import '../foundation/animated_scale_button.dart';
 
 /// Purpose: A high-emphasis gradient button.
@@ -28,9 +28,15 @@ class GradientButton extends StatelessWidget {
         onPressed: onPressed,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: AppRadius.largeRadius,
-            color: AppColors.primary,
-            boxShadow: AppShadows.glowShadow,
+            borderRadius: AppRadius.extraLargeRadius,
+            color: AppColors.secondary,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
+            ],
           ),
           child: ElevatedButton(
             onPressed: onPressed,
@@ -41,7 +47,7 @@ class GradientButton extends StatelessWidget {
               overlayColor: Colors.transparent,
               minimumSize: const Size(double.infinity, 56), // Larger Touch target
               shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.largeRadius,
+                borderRadius: AppRadius.extraLargeRadius,
               ),
             ),
             child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
