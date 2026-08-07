@@ -1,4 +1,3 @@
-﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -22,28 +21,17 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final card = Container(
+      padding: padding ?? const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
+        color: AppColors.cardGlass, // Pure white
         borderRadius: AppRadius.largeRadius,
         boxShadow: AppShadows.cardShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: AppRadius.largeRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-          child: Container(
-            padding: padding ?? const EdgeInsets.all(24.0), // increased padding
-            decoration: BoxDecoration(
-              gradient: AppColors.glassGradient,
-              borderRadius: AppRadius.largeRadius,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.5),
-                width: 1.5,
-              ),
-            ),
-            child: child,
-          ),
+        border: Border.all(
+          color: AppColors.borderLight,
+          width: 1.0,
         ),
       ),
+      child: child,
     );
 
     if (!animateEntrance) return card;

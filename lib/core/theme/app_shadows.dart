@@ -3,31 +3,22 @@ import 'package:flutter/material.dart';
 class AppShadows {
   static const List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: Color(0x1A000000), // Very light 10% black
-      offset: Offset(0, 10),
-      blurRadius: 30,
-      spreadRadius: -5,
-    ),
-    BoxShadow(
-      color: Color(0x0D000000), // 5% black for ambient shadow
-      offset: Offset(0, 4),
-      blurRadius: 10,
-      spreadRadius: -2,
-    ),
-  ];
-
-  static const List<BoxShadow> glowingBlue = [
-    BoxShadow(
-      color: Color(0x4D3B82F6), // 30% blue
-      offset: Offset(0, 8),
-      blurRadius: 24,
+      color: Color(0x08000000), // 3% black for ambient shadow
+      offset: Offset(0, 12),
+      blurRadius: 32,
       spreadRadius: -4,
+    ),
+    BoxShadow(
+      color: Color(0x05000000), // 2% black for sharper base
+      offset: Offset(0, 4),
+      blurRadius: 12,
+      spreadRadius: -2,
     ),
   ];
 
   static const List<BoxShadow> glowingGreen = [
     BoxShadow(
-      color: Color(0x4D10B981),
+      color: Color(0x3322C55E), // Mint glow
       offset: Offset(0, 8),
       blurRadius: 24,
       spreadRadius: -4,
@@ -36,14 +27,14 @@ class AppShadows {
   
   static const List<BoxShadow> glowingRed = [
     BoxShadow(
-      color: Color(0x4DEF4444),
+      color: Color(0x33EF4444), // Red glow
       offset: Offset(0, 8),
       blurRadius: 24,
       spreadRadius: -4,
     ),
   ];
 
-  static const List<BoxShadow> glowShadow = glowingBlue;
+  static const List<BoxShadow> glowShadow = glowingGreen;
   static const List<BoxShadow> glassShadow = cardShadow;
 }
 

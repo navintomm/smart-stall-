@@ -53,7 +53,7 @@ class CommunicationLogCard extends ConsumerWidget {
 
   Widget _buildLogItem(String type, String time, String message) {
     Color typeColor = Colors.grey;
-    if (type == 'TX') typeColor = AppColors.robotBlue;
+    if (type == 'TX') typeColor = AppColors.primary;
     if (type == 'RX') typeColor = AppColors.successGreen;
     if (type == 'WARN') typeColor = AppColors.warningOrange;
     if (type == 'ERROR') typeColor = AppColors.dangerRed;

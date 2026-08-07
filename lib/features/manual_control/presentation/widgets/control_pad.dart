@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_shadows.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 
 class ControlPad extends StatelessWidget {
@@ -44,25 +45,33 @@ class _DirectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppColors.primary;
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: effectiveColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: effectiveColor.withOpacity(0.3)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: effectiveColor, size: 32),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: effectiveColor, fontSize: 12, fontWeight: FontWeight.bold)),
-          ],
+    final effectiveColor = color ?? AppColors.text;
+    final isDanger = color == AppColors.dangerRed;
+    
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.cardGlass,
+        boxShadow: AppShadows.cardShadow,
+        border: Border.all(color: AppColors.borderLight, width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {},
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 86,
+            height: 86,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: effectiveColor, size: 36),
+                const SizedBox(height: 2),
+                Text(label, style: TextStyle(color: effectiveColor, fontSize: 11, fontWeight: isDanger ? FontWeight.bold : FontWeight.w600)),
+              ],
+            ),
+          ),
         ),
       ),
     );

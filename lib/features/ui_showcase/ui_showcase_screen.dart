@@ -47,7 +47,7 @@ class _UiShowcaseScreenState extends State<UiShowcaseScreen> {
               spacing: AppSpacing.sm,
               children: [
                 _colorBox(AppColors.primary, 'Primary'),
-                _colorBox(AppColors.robotBlue, 'Robot Blue'),
+                _colorBox(AppColors.primary, 'Robot Blue'),
                 _colorBox(AppColors.successGreen, 'Success'),
                 _colorBox(AppColors.warningOrange, 'Warning'),
                 _colorBox(AppColors.dangerRed, 'Danger'),

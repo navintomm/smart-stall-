@@ -9,6 +9,7 @@ import 'widgets/system_overview_section.dart';
 import 'widgets/recent_activity_list.dart';
 import 'widgets/emergency_stop_card.dart';
 import 'widgets/safety_alert_banner.dart';
+import 'widgets/connection_alert_banner.dart';
 import 'widgets/autonomous_cleaning_section.dart';
 import 'widgets/vision_localization_card.dart';
 import 'widgets/mission_control_section.dart';
@@ -32,7 +33,12 @@ class DashboardScreen extends StatelessWidget {
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: SafetyAlertBanner(),
+                    child: Column(
+                      children: [
+                        ConnectionAlertBanner(),
+                        SafetyAlertBanner(),
+                      ],
+                    ),
                   ),
                 ),
                 SliverPadding(

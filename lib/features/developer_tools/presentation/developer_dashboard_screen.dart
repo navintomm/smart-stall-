@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'widgets/system_overview_card.dart';
@@ -37,67 +36,31 @@ class DeveloperDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Background Gradient Mesh
-          Positioned(
-            top: -100,
-            right: -100,
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.warningOrange.withOpacity(0.15),
-                ),
-              ),
-            ),
+      body: const SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SystemOverviewCard(),
+              SizedBox(height: AppSpacing.xl),
+              PerformancePanelCard(),
+              SizedBox(height: AppSpacing.xl),
+              NavigationDiagnosticsCard(),
+              SizedBox(height: AppSpacing.xl),
+              VisionDiagnosticsCard(),
+              SizedBox(height: AppSpacing.xl),
+              CleaningDiagnosticsCard(),
+              SizedBox(height: AppSpacing.xl),
+              DeveloperSettingsCard(),
+              SizedBox(height: AppSpacing.xl),
+              TelemetryMonitorCard(),
+              SizedBox(height: AppSpacing.xl),
+              CommunicationLogCard(),
+              SizedBox(height: AppSpacing.colossal),
+            ],
           ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.secondary.withOpacity(0.15),
-                ),
-              ),
-            ),
-          ),
-          
-          const SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SystemOverviewCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  PerformancePanelCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  NavigationDiagnosticsCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  VisionDiagnosticsCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  CleaningDiagnosticsCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  DeveloperSettingsCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  TelemetryMonitorCard(),
-                  SizedBox(height: AppSpacing.xl),
-                  CommunicationLogCard(),
-                  SizedBox(height: AppSpacing.colossal),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

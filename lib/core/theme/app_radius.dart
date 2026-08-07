@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AppRadius {
-  static const double small = 12.0;
-  static const double medium = 20.0;
-  static const double large = 28.0;
+  static const double small = 16.0;
+  static const double medium = 24.0;
+  static const double large = 30.0;
   static const double extraLarge = 36.0;
   
   static final BorderRadius smallRadius = BorderRadius.circular(small);

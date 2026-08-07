@@ -17,13 +17,17 @@
 #include "vision/LocalizationEngine.h"
 #include "navigation/MissionPlanner.h"
 
+#include "SystemHealthManager.h"
+#include "RecoveryManager.h"
+
 void setup() {
     Logger::init(115200);
-    Logger::info("Main", "Initializing SmartStall Firmware Core...");
+    Logger::setSessionId("MAIN");
+    Logger::info("Main", "Starting SmartStall Firmware...");
     
-    // Initialize HAL
-    ServoController::init();
+    // Core Hardware
     MotorController::init();
+    ServoController::init();
     PumpController::init();
     BrushController::init();
     SensorManager::init();
@@ -33,6 +37,10 @@ void setup() {
     // Initialize Vision & Navigation
     LocalizationEngine::init();
     MissionPlanner::init();
+
+    // Health & Recovery
+    SystemHealthManager::init();
+    RecoveryManager::init();
 
     // Run Hardware Self-Test
     SelfTest::run();
@@ -45,6 +53,8 @@ void setup() {
 }
 
 void loop() {
+    SystemHealthManager::tickStart();
+
     // 1. Maintain TCP connections and process incoming packets
     WifiServerHandler::tick();
     
@@ -61,6 +71,10 @@ void loop() {
     
     // 3. Update dummy internal state (battery drain, temps) via HAL
     SensorManager::update();
+
+    // 4. Health & Recovery checks
+    RecoveryManager::tick();
+    SystemHealthManager::tickEnd();
     
     // 4. Broadcast telemetry 1Hz
     TelemetryEngine::tick([](const String& outJson) {

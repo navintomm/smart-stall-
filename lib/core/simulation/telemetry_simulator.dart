@@ -51,6 +51,10 @@ class TelemetrySimulator {
         'mission_time': '${120 + _random.nextInt(10)}',
         'mission_count': '3',
         'nav_state': 'APPROACHING',
+        'sys_loop_ms': '${2 + _random.nextInt(5)}',
+        'sys_fps': '${100 - _random.nextInt(10)}',
+        'sys_heap': '${150000 + _random.nextInt(5000)}',
+        'sys_wdg': 'false',
       });
     });
   }

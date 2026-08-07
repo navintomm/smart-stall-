@@ -15,6 +15,7 @@
 #include "vision/PoseEstimator.h"
 #include "navigation/MissionPlanner.h"
 #include "navigation/NavigationController.h"
+#include "SystemHealthManager.h"
 #include "config/pin_map.h"
 #include <WiFi.h>
 
@@ -103,6 +104,12 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         packet.payload["mission_count"] = MissionPlanner::getMissionCount();
         packet.payload["nav_state"] = NavigationController::getStateName();
 
+        // System Health
+        packet.payload["sys_loop_ms"] = SystemHealthManager::getMaxLoopTimeMs();
+        packet.payload["sys_fps"] = SystemHealthManager::getLoopFps();
+        packet.payload["sys_heap"] = SystemHealthManager::getFreeHeap();
+        packet.payload["sys_wdg"] = SystemHealthManager::isWatchdogTriggered();
+        
         packet.payload["uptime"] = currentMillis / 1000;
 
         String outJson;

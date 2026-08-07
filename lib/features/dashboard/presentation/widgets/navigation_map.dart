@@ -122,7 +122,7 @@ class _MapPainter extends CustomPainter {
 
       textPainter.text = TextSpan(
         text: _getName(id),
-        style: TextStyle(color: Colors.white, fontSize: 10),
+        style: const TextStyle(color: Colors.white, fontSize: 10),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(offset.dx - textPainter.width / 2, offset.dy + 16));

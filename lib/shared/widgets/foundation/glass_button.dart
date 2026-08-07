@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -25,18 +25,20 @@ class GlassButton extends StatelessWidget {
       enabled: onPressed != null,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: AppRadius.mediumRadius,
-          boxShadow: AppShadows.glassShadow,
+          borderRadius: AppRadius.largeRadius,
+          color: AppColors.cardGlass,
+          border: Border.all(color: AppColors.borderLight, width: 1.0),
+          boxShadow: AppShadows.cardShadow,
         ),
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.cardGlass.withOpacity(0.7),
-            foregroundColor: AppColors.primary,
+            backgroundColor: Colors.transparent,
+            foregroundColor: AppColors.text,
             elevation: 0,
             minimumSize: const Size(48, 48), // Accessibility touch target
             shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.mediumRadius,
+              borderRadius: AppRadius.largeRadius,
             ),
           ),
           child: child,

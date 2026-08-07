@@ -1,24 +1,31 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../shared/widgets/foundation/glass_card.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../../core/theme/app_radius.dart';
 
 class EmergencyStopPanel extends StatelessWidget {
   const EmergencyStopPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(100),
+        color: AppColors.dangerRed,
+        boxShadow: AppShadows.glowingRed,
+      ),
       child: Material(
-        color: AppColors.dangerRed.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.transparent,
         child: InkWell(
           onTap: () {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.cardGlass,
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.largeRadius),
                 title: const Text('EMERGENCY STOP'),
                 content: const Text('Are you sure you want to halt all robot operations immediately?'),
                 actions: [
@@ -28,21 +35,17 @@ class EmergencyStopPanel extends StatelessWidget {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.dangerRed, width: 2),
-              borderRadius: BorderRadius.circular(24),
-            ),
+          borderRadius: BorderRadius.circular(100),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: AppSpacing.xl),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(AppIcons.warning, color: AppColors.dangerRed, size: 48),
+                const Icon(AppIcons.warning, color: Colors.white, size: 36),
                 const SizedBox(width: AppSpacing.md),
                 Text(
                   'EMERGENCY STOP',
-                  style: AppTextStyles.displayLarge.copyWith(color: AppColors.dangerRed),
+                  style: AppTextStyles.displayMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

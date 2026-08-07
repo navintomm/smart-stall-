@@ -1,7 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
@@ -30,22 +29,35 @@ class RobotStatusCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(AppIcons.robot, size: 32, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(status.id, style: AppTextStyles.displayLarge),
+                    Image.asset('assets/images/robot_render.png', height: 100),
+                    const SizedBox(width: AppSpacing.md),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('SmartStall', style: AppTextStyles.bodyMedium),
+                        Text(status.id, style: AppTextStyles.displayMedium),
+                      ],
+                    ),
                   ],
                 ),
                 StatusIndicator(color: status.state == 'ACTIVE' ? AppColors.successGreen : AppColors.warningOrange),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _StatusItem(label: 'Battery', value: "${status.batteryLevel}%"),
-                _StatusItem(label: 'Mode', value: status.state),
-                const _StatusItem(label: 'Last Sync', value: 'Just now'),
-              ],
+            const SizedBox(height: AppSpacing.lg),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _StatusItem(label: 'Battery', value: "${status.batteryLevel}%"),
+                  _StatusItem(label: 'Mode', value: status.state),
+                  const _StatusItem(label: 'Last Sync', value: 'Just now'),
+                ],
+              ),
             ),
           ],
         ),

@@ -18,7 +18,7 @@ class AppTheme {
         bodyLarge: AppTextStyles.bodyLarge,
         bodyMedium: AppTextStyles.bodyMedium,
       ),
-      scaffoldBackgroundColor: Colors.transparent, // Background handled by gradient
+      scaffoldBackgroundColor: AppColors.backgroundLight,
     );
   }
 }

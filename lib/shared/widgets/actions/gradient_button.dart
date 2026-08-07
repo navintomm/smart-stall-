@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -25,10 +25,8 @@ class GradientButton extends StatelessWidget {
       enabled: onPressed != null,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: AppRadius.mediumRadius,
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, AppColors.secondary],
-          ),
+          borderRadius: AppRadius.largeRadius,
+          color: AppColors.primary,
           boxShadow: AppShadows.glowShadow,
         ),
         child: ElevatedButton(
@@ -36,12 +34,12 @@ class GradientButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            minimumSize: const Size(double.infinity, 48), // Touch target
+            minimumSize: const Size(double.infinity, 56), // Larger Touch target
             shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.mediumRadius,
+              borderRadius: AppRadius.largeRadius,
             ),
           ),
-          child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
         ),
       ),
     );

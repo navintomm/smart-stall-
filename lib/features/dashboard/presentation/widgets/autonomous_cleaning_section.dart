@@ -78,7 +78,7 @@ class AutonomousCleaningSection extends ConsumerWidget {
                     onPressed: () => robotController.resumeCleaning(),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Resume'),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.robotBlue, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
                   ),
                   ElevatedButton.icon(
                     onPressed: () => robotController.stopCleaning(),

@@ -50,6 +50,12 @@ class TelemetryPayload {
   final int missionCount;
   final String navState;
 
+  // System Health
+  final int sysLoopMs;
+  final int sysFps;
+  final int sysHeap;
+  final bool sysWdg;
+
   const TelemetryPayload({
     this.batteryPercentage = 0.0,
     this.batteryVoltage = 12.0,
@@ -100,6 +106,10 @@ class TelemetryPayload {
     this.missionTime = 0,
     this.missionCount = 0,
     this.navState = 'IDLE',
+    this.sysLoopMs = 0,
+    this.sysFps = 0,
+    this.sysHeap = 0,
+    this.sysWdg = false,
   });
 
   factory TelemetryPayload.fromJson(Map<String, dynamic> json) {
@@ -153,6 +163,10 @@ class TelemetryPayload {
       missionTime: json['mission_time'] as int? ?? 0,
       missionCount: json['mission_count'] as int? ?? 0,
       navState: json['nav_state'] as String? ?? 'IDLE',
+      sysLoopMs: json['sys_loop_ms'] as int? ?? 0,
+      sysFps: json['sys_fps'] as int? ?? 0,
+      sysHeap: json['sys_heap'] as int? ?? 0,
+      sysWdg: json['sys_wdg'] as bool? ?? false,
     );
   }
 }
