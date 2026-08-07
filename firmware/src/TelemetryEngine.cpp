@@ -10,6 +10,7 @@
 #include "hardware/MotorController.h"
 #include "hardware/CleaningController.h"
 #include "vision/CameraManager.h"
+#include "vision/CalibrationManager.h"
 #include "vision/LocalizationEngine.h"
 #include "vision/AlignmentEngine.h"
 #include "vision/PoseEstimator.h"
@@ -77,6 +78,7 @@ void TelemetryEngine::tick(void (*sendCallback)(const String&)) {
         packet.payload["abort_reason"] = CleaningController::getAbortReason();
         
         packet.payload["cam_status"] = CameraManager::isHealthy() ? "OK" : "ERROR";
+        packet.payload["cam_calibrated"] = CalibrationManager::isCalibrated();
         packet.payload["cam_fps"] = CameraManager::getFPS();
         packet.payload["marker_id"] = LocalizationEngine::getMarkerId();
         

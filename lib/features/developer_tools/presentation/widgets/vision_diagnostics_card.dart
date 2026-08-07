@@ -21,6 +21,7 @@ class VisionDiagnosticsCard extends ConsumerWidget {
 
         String camStatus = data.firstWhere((s) => s.id == 'cam_status', orElse: () => const SensorData(id: 'cam_status', name: '', value: 'UNKNOWN')).value;
         int camFps = int.tryParse(data.firstWhere((s) => s.id == 'cam_fps', orElse: () => const SensorData(id: 'cam_fps', name: '', value: '0')).value) ?? 0;
+        bool camCalibrated = data.firstWhere((s) => s.id == 'cam_calibrated', orElse: () => const SensorData(id: 'cam_calibrated', name: '', value: 'false')).value == 'true';
         int markerId = int.tryParse(data.firstWhere((s) => s.id == 'marker_id', orElse: () => const SensorData(id: 'marker_id', name: '', value: '0')).value) ?? 0;
         double markerConf = double.tryParse(data.firstWhere((s) => s.id == 'marker_conf', orElse: () => const SensorData(id: 'marker_conf', name: '', value: '0.0')).value) ?? 0.0;
         String locState = data.firstWhere((s) => s.id == 'loc_state', orElse: () => const SensorData(id: 'loc_state', name: '', value: 'UNKNOWN')).value;
@@ -38,6 +39,7 @@ class VisionDiagnosticsCard extends ConsumerWidget {
               Text('Vision Diagnostics', style: AppTextStyles.titleLarge),
               const SizedBox(height: AppSpacing.sm),
               _buildRow('Camera Status:', camStatus),
+              _buildRow('Camera Calibrated:', camCalibrated ? 'YES' : 'NO'),
               _buildRow('Camera FPS:', '$camFps FPS'),
               _buildRow('Localization State:', locState),
               _buildRow('Last Marker ID:', '$markerId'),

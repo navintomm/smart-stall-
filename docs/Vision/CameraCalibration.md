@@ -1,14 +1,20 @@
 # Camera Calibration
 
-Camera calibration is essential for accurate Pose Estimation (solvePnP).
+## Overview
+Camera calibration is the prerequisite for accurate pose estimation. Before `solvePnP` can run, the ESP32 vision system must know the camera's intrinsic parameters.
 
-## Parameters
-The `CalibrationManager` stores:
-- **Camera Matrix:** $3 \times 3$ intrinsic parameter matrix $(f_x, f_y, c_x, c_y)$.
-- **Distortion Coefficients:** Radial and tangential distortion vectors $(k_1, k_2, p_1, p_2, k_3)$.
+## Intrinsic Camera Matrix (K)
+The intrinsic matrix represents the focal length and optical center of the camera:
+```
+[ fx   0  cx ]
+[  0  fy  cy ]
+[  0   0   1 ]
+```
+- `fx`, `fy`: Focal length in pixels.
+- `cx`, `cy`: Principal point (usually image center).
 
-## Calibration Process
-1. Print a standard OpenCV checkerboard pattern.
-2. Capture at least 15-20 images from various angles.
-3. Run calibration script (offline) to generate parameters.
-4. Flash the parameters to the ESP32 SPIFFS or hardcode in `CalibrationManager`.
+## Distortion Coefficients
+Lenses introduce radial and tangential distortion. We use a 5-parameter distortion vector `[k1, k2, p1, p2, k3]` to correct this before estimation.
+
+## Implementation Details
+The `CalibrationManager` loads these matrices upon boot. For the presentation build, these values are mocked as an ideal pinhole camera with zero distortion to ensure stable tracking.

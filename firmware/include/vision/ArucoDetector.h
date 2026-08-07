@@ -2,6 +2,8 @@
 #define ARUCO_DETECTOR_H
 
 #include <Arduino.h>
+#include "opencv2/opencv.hpp"
+#include <vector>
 
 struct ArucoDetection {
     int markerId;
@@ -10,6 +12,7 @@ struct ArucoDetection {
     float confidence;
     unsigned long timestamp;
     bool isValid;
+    std::vector<cv::Point2f> corners; // Needed for solvePnP
 };
 
 class ArucoDetector {
