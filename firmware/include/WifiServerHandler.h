@@ -3,6 +3,8 @@
 
 #include <WiFi.h>
 
+#define MAX_CLIENTS 3
+
 class WifiServerHandler {
 public:
     static void init();
@@ -11,11 +13,11 @@ public:
 
 private:
     static WiFiServer _server;
-    static WiFiClient _client;
-    static String _lineBuffer;
-    static unsigned long _lastHeartbeatTime;
+    static WiFiClient _clients[MAX_CLIENTS];
+    static String _lineBuffers[MAX_CLIENTS];
+    static unsigned long _lastHeartbeatTimes[MAX_CLIENTS];
     
     static void processIncomingLine(const String& line);
 };
 
-#endif // WIFI_SERVER_HANDLER_H
+#endif

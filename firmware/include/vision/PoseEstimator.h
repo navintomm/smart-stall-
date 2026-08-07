@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "ArucoDetector.h"
-#include "opencv2/opencv.hpp"
 
 struct Pose {
     float x;
@@ -18,12 +17,12 @@ struct Pose {
 class PoseEstimator {
 public:
     static void init();
-    static void estimatePose(const ArucoDetection& detection);
+    static void estimatePose(const ArucoDetection& detection); // No-op now
+    static void setPose(float x, float y, float z, float roll, float pitch, float yaw, float distance);
     static Pose getLatestPose();
 
 private:
     static Pose _currentPose;
-    static std::vector<cv::Point3f> _markerObjPoints;
 };
 
 #endif

@@ -10,6 +10,10 @@
 #include "WifiServerHandler.h"
 #include "RobotState.h"
 #include "Logger.h"
+#include "vision/ArucoDetector.h"
+#include "vision/PoseEstimator.h"
+#include "vision/AlignmentEngine.h"
+#include "vision/CalibrationManager.h"
 
 void CommandDispatcher::handleCommand(const RobotPacket& packet) {
     if (EmergencyController::isEmergency() && packet.commandId != 402) {
@@ -148,6 +152,29 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
         case 604: // MISSION_CANCEL
             MissionPlanner::cancelMission();
             RobotState::setMode("IDLE");
+            break;
+            
+        case 701: // VISION_TELEMETRY
+            if (packet.payload.containsKey("marker_id")) {
+                int mId = packet.payload["marker_id"].as<int>();
+                float conf = packet.payload["marker_conf"].as<float>();
+                ArucoDetector::setDetection(mId, conf);
+                
+                float x = packet.payload["pose_x"].as<float>();
+                float y = packet.payload["pose_y"].as<float>();
+                float z = packet.payload["pose_z"].as<float>();
+                float r = packet.payload["pose_roll"].as<float>();
+                float p = packet.payload["pose_pitch"].as<float>();
+                float yw = packet.payload["pose_yaw"].as<float>();
+                float d = packet.payload["marker_dist"].as<float>();
+                PoseEstimator::setPose(x, y, z, r, p, yw, d);
+                
+                int score = packet.payload["align_score"].as<int>();
+                AlignmentEngine::setAlignmentScore(score);
+                
+                bool calib = packet.payload["cam_calibrated"].as<bool>();
+                CalibrationManager::setCalibrated(calib);
+            }
             break;
             
         default:

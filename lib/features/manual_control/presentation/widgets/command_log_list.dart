@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/command_log_entry.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -17,8 +17,7 @@ class CommandLogList extends ConsumerWidget {
     return GlassCard(
       animateEntrance: true,
       child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: logs.length,
         separatorBuilder: (_, __) => const Divider(color: Colors.black12, height: AppSpacing.md),

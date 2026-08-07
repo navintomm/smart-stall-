@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/helpers/responsive_helper.dart';
 import '../../../../shared/widgets/navigation/navigation_header.dart';
 import '../../../../core/theme/app_icons.dart';
 import 'layouts/manual_control_mobile_layout.dart';
 import 'layouts/manual_control_tablet_layout.dart';
 import 'layouts/manual_control_desktop_layout.dart';
+import 'layouts/manual_control_landscape_layout.dart';
 
 class ManualControlScreen extends StatelessWidget {
   const ManualControlScreen({super.key});
@@ -23,6 +24,8 @@ class ManualControlScreen extends StatelessWidget {
                     return const ManualControlDesktopLayout();
                   } else if (ResponsiveHelper.isTablet(context)) {
                     return const ManualControlTabletLayout();
+                  } else if (ResponsiveHelper.isLandscape(context)) {
+                    return const ManualControlLandscapeLayout();
                   } else {
                     return const ManualControlMobileLayout();
                   }

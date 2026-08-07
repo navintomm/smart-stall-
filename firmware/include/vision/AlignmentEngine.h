@@ -9,12 +9,13 @@ struct AlignmentData {
     float verticalOffset;
     float rotationOffset;
     float distanceError;
-    int alignmentScore; // 0-100
+    int alignmentScore; // 0-100%
 };
 
 class AlignmentEngine {
 public:
-    static void calculateAlignment(const Pose& currentPose);
+    static void calculateAlignment(const Pose& currentPose); // No-op now
+    static void setAlignmentScore(int score);
     static AlignmentData getAlignment();
     static bool isAligned();
 

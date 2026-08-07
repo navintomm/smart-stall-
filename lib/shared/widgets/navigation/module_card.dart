@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../foundation/glass_card.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -22,30 +22,45 @@ class ModuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 48, color: AppColors.primary),
-              const SizedBox(height: AppSpacing.md),
-              Text(title, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                description,
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.black87.withOpacity(0.7)),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 180;
+        return GestureDetector(
+          onTap: onTap,
+          child: GlassCard(
+            child: Padding(
+              padding: EdgeInsets.all(isSmall ? AppSpacing.md : AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: isSmall ? 32 : 48, color: AppColors.primary),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    title, 
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isSmall ? 14 : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    description,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.black87.withOpacity(0.7),
+                      fontSize: isSmall ? 12 : null,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
-

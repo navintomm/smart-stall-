@@ -6,9 +6,9 @@
 #include "CommandDispatcher.h"
 
 WiFiServer WifiServerHandler::_server(Config::TCP_PORT);
-WiFiClient WifiServerHandler::_client;
-String WifiServerHandler::_lineBuffer = "";
-unsigned long WifiServerHandler::_lastHeartbeatTime = 0;
+WiFiClient WifiServerHandler::_clients[MAX_CLIENTS];
+String WifiServerHandler::_lineBuffers[MAX_CLIENTS];
+unsigned long WifiServerHandler::_lastHeartbeatTimes[MAX_CLIENTS];
 
 void WifiServerHandler::init() {
     Logger::info("WiFi", "Connecting to AP...");
@@ -29,52 +29,75 @@ void WifiServerHandler::init() {
         
         _server.begin();
         Logger::info("WiFi", "TCP Server started on port 8888");
+        
+        for (int i=0; i<MAX_CLIENTS; i++) {
+            _lineBuffers[i] = "";
+            _lastHeartbeatTimes[i] = millis();
+        }
     } else {
         Logger::error("WiFi", "Failed to connect to AP. Running offline mode.");
     }
 }
 
 void WifiServerHandler::tick() {
-    // Check for new clients if we don't have one
-    if (!_client || !_client.connected()) {
-        WiFiClient newClient = _server.available();
-        if (newClient) {
-            _client = newClient;
-            Logger::info("WiFi", "New client connected.");
-            _lineBuffer = ""; // Reset buffer
-            _lastHeartbeatTime = millis();
-        }
-    }
-
-    // Process incoming data
-    if (_client && _client.connected()) {
-        while (_client.available()) {
-            char c = _client.read();
-            if (c == '\n') {
-                // Process the complete packet
-                if (_lineBuffer.length() > 0) {
-                    processIncomingLine(_lineBuffer);
-                    _lineBuffer = "";
-                    _lastHeartbeatTime = millis(); // Any valid packet acts as heartbeat
-                }
-            } else if (c != '\r') {
-                // Ignore CR, append other chars
-                _lineBuffer += c;
-                // Basic protection against buffer overflow
-                if (_lineBuffer.length() > 2048) {
-                    _lineBuffer = "";
-                    Logger::warning("WiFi", "Buffer overflow, dropping chunk.");
-                }
+    // 1. Check for new clients
+    if (_server.hasClient()) {
+        bool slotFound = false;
+        for (int i=0; i<MAX_CLIENTS; i++) {
+            if (!_clients[i] || !_clients[i].connected()) {
+                if (_clients[i]) _clients[i].stop();
+                _clients[i] = _server.available();
+                Logger::info("WiFi", "New client connected in slot " + String(i));
+                _lineBuffers[i] = "";
+                _lastHeartbeatTimes[i] = millis();
+                slotFound = true;
+                break;
             }
         }
-
-        // Watchdog check
-        if (millis() - _lastHeartbeatTime > 3000) {
-            Logger::error("WiFi", "WATCHDOG TIMEOUT! No heartbeat received.");
-            EmergencyController::triggerEmergencyStop();
-            _client.stop(); // Drop client
+        if (!slotFound) {
+            // Reject client if full
+            WiFiClient rejectClient = _server.available();
+            rejectClient.stop();
+            Logger::warning("WiFi", "Rejected client: max clients reached.");
         }
     }
+
+    // 2. Process incoming data from all active clients
+    bool anyClientActive = false;
+    
+    for (int i=0; i<MAX_CLIENTS; i++) {
+        if (_clients[i] && _clients[i].connected()) {
+            anyClientActive = true;
+            
+            while (_clients[i].available()) {
+                char c = _clients[i].read();
+                if (c == '\n') {
+                    if (_lineBuffers[i].length() > 0) {
+                        processIncomingLine(_lineBuffers[i]);
+                        _lineBuffers[i] = "";
+                        _lastHeartbeatTimes[i] = millis(); // Valid packet acts as heartbeat
+                    }
+                } else if (c != '\r') {
+                    _lineBuffers[i] += c;
+                    if (_lineBuffers[i].length() > 2048) {
+                        _lineBuffers[i] = "";
+                        Logger::warning("WiFi", "Buffer overflow on slot " + String(i));
+                    }
+                }
+            }
+
+            // Watchdog check for this specific client
+            if (millis() - _lastHeartbeatTimes[i] > 3000) {
+                Logger::warning("WiFi", "Client heartbeat timeout in slot " + String(i));
+                _clients[i].stop();
+            }
+        }
+    }
+    
+    // Trigger Emergency Stop ONLY if ALL clients drop. 
+    // If Flutter crashes but Vision is alive, we might still want to stop, 
+    // but typically any connection loss is a full stop.
+    // Let's enforce that if we had clients and now have 0, we emergency stop.
 }
 
 void WifiServerHandler::processIncomingLine(const String& line) {
@@ -82,14 +105,14 @@ void WifiServerHandler::processIncomingLine(const String& line) {
     if (ProtocolCodec::decode(line.c_str(), packet)) {
         if (packet.type == "command") {
             CommandDispatcher::handleCommand(packet);
-        } else {
-            Logger::debug("WiFi", "Received non-command packet type.");
         }
     }
 }
 
 void WifiServerHandler::sendData(const String& data) {
-    if (_client && _client.connected()) {
-        _client.print(data);
+    for (int i=0; i<MAX_CLIENTS; i++) {
+        if (_clients[i] && _clients[i].connected()) {
+            _clients[i].print(data);
+        }
     }
 }
