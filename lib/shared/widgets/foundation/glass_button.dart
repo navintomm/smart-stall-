@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
+import 'animated_scale_button.dart';
 
 /// Purpose: A standard glassmorphism button.
 /// Usage: Primary actions inside glass interfaces.
@@ -23,25 +24,30 @@ class GlassButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: onPressed != null,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.largeRadius,
-          color: AppColors.cardGlass,
-          border: Border.all(color: AppColors.borderLight, width: 1.0),
-          boxShadow: AppShadows.cardShadow,
-        ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: AppColors.text,
-            elevation: 0,
-            minimumSize: const Size(48, 48), // Accessibility touch target
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.largeRadius,
-            ),
+      child: AnimatedScaleButton(
+        onPressed: onPressed,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.largeRadius,
+            color: AppColors.cardGlass,
+            border: Border.all(color: AppColors.borderLight, width: 1.0),
+            boxShadow: AppShadows.cardShadow,
           ),
-          child: child,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: AppColors.text,
+              elevation: 0,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: Colors.transparent,
+              minimumSize: const Size(48, 48), // Accessibility touch target
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.largeRadius,
+              ),
+            ),
+            child: child,
+          ),
         ),
       ),
     );

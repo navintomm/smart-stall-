@@ -5,6 +5,9 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 import '../../../../shared/widgets/feedback/status_indicator.dart';
+import '../../../../shared/widgets/feedback/shimmer_loader.dart';
+import '../../../../shared/widgets/display/animated_value_text.dart';
+import '../../../../shared/widgets/foundation/floating_animation.dart';
 import '../../presentation/providers/dashboard_provider.dart';
 
 class RobotStatusCard extends ConsumerWidget {
@@ -15,7 +18,27 @@ class RobotStatusCard extends ConsumerWidget {
     final state = ref.watch(dashboardProvider);
     final status = state.status;
     
-    if (status == null) return const CircularProgressIndicator();
+    if (status == null) {
+      return const GlassCard(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerLoader(width: 150, height: 100),
+                  ShimmerLoader(width: 80, height: 30, borderRadius: BorderRadius.all(Radius.circular(16))),
+                ],
+              ),
+              SizedBox(height: AppSpacing.lg),
+              ShimmerLoader(width: double.infinity, height: 60),
+            ],
+          ),
+        ),
+      );
+    }
 
     return GlassCard(
       animateEntrance: true,
@@ -29,7 +52,9 @@ class RobotStatusCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Image.asset('assets/images/robot_render.png', height: 100),
+                    FloatingAnimation(
+                      child: Image.asset('assets/images/robot_render.png', height: 100),
+                    ),
                     const SizedBox(width: AppSpacing.md),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +78,12 @@ class RobotStatusCard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _StatusItem(label: 'Battery', value: "${status.batteryLevel}%"),
+                  _StatusItem(
+                    label: 'Battery', 
+                    value: "${status.batteryLevel}%",
+                    numericValue: status.batteryLevel.toDouble(),
+                    suffix: '%',
+                  ),
                   _StatusItem(label: 'Mode', value: status.state),
                   const _StatusItem(label: 'Last Sync', value: 'Just now'),
                 ],
@@ -69,8 +99,15 @@ class RobotStatusCard extends ConsumerWidget {
 class _StatusItem extends StatelessWidget {
   final String label;
   final String value;
+  final double? numericValue;
+  final String suffix;
   
-  const _StatusItem({required this.label, required this.value});
+  const _StatusItem({
+    required this.label, 
+    required this.value,
+    this.numericValue,
+    this.suffix = '',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +116,13 @@ class _StatusItem extends StatelessWidget {
       children: [
         Text(label, style: AppTextStyles.bodyMedium),
         const SizedBox(height: AppSpacing.xs),
-        Text(value, style: AppTextStyles.titleLarge),
+        numericValue != null
+            ? AnimatedValueText(
+                value: numericValue!,
+                suffix: suffix,
+                style: AppTextStyles.titleLarge,
+              )
+            : Text(value, style: AppTextStyles.titleLarge),
       ],
     );
   }

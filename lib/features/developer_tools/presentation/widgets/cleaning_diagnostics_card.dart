@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/sensor_data.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
+import '../../../../shared/widgets/display/animated_value_text.dart';
 
 class CleaningDiagnosticsCard extends ConsumerWidget {
   const CleaningDiagnosticsCard({super.key});
@@ -33,11 +34,11 @@ class CleaningDiagnosticsCard extends ConsumerWidget {
               Text('Cleaning Diagnostics', style: AppTextStyles.titleLarge),
               const SizedBox(height: AppSpacing.sm),
               _buildRow('Current State:', cleanState),
-              _buildRow('Progress:', '$cleanProgress%'),
-              _buildRow('Elapsed Time:', '${cleanElapsed}s'),
-              _buildRow('Est. Remaining:', '${cleanRemaining}s'),
+              _buildRow('Progress:', '$cleanProgress%', numericValue: cleanProgress.toDouble(), suffix: '%'),
+              _buildRow('Elapsed Time:', '${cleanElapsed}s', numericValue: cleanElapsed.toDouble(), suffix: 's'),
+              _buildRow('Est. Remaining:', '${cleanRemaining}s', numericValue: cleanRemaining.toDouble(), suffix: 's'),
               _buildRow('Last Abort Reason:', abortReason.isEmpty ? 'None' : abortReason),
-              _buildRow('Cleaning Cycle Count:', '$cleanCycle'),
+              _buildRow('Cleaning Cycle Count:', '$cleanCycle', numericValue: cleanCycle.toDouble()),
             ],
           ),
         );
@@ -45,14 +46,20 @@ class CleaningDiagnosticsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildRow(String label, String value) {
+  Widget _buildRow(String label, String value, {double? numericValue, String suffix = ''}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
-          Text(value, style: AppTextStyles.bodyMedium),
+          numericValue != null
+              ? AnimatedValueText(
+                  value: numericValue,
+                  suffix: suffix,
+                  style: AppTextStyles.bodyMedium,
+                )
+              : Text(value, style: AppTextStyles.bodyMedium),
         ],
       ),
     );

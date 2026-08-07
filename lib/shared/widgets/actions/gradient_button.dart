@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
+import '../foundation/animated_scale_button.dart';
 
 /// Purpose: A high-emphasis gradient button.
 /// Usage: The most important actions on a screen.
@@ -23,23 +24,28 @@ class GradientButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: onPressed != null,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.largeRadius,
-          color: AppColors.primary,
-          boxShadow: AppShadows.glowShadow,
-        ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            minimumSize: const Size(double.infinity, 56), // Larger Touch target
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.largeRadius,
-            ),
+      child: AnimatedScaleButton(
+        onPressed: onPressed,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.largeRadius,
+            color: AppColors.primary,
+            boxShadow: AppShadows.glowShadow,
           ),
-          child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: Colors.transparent,
+              minimumSize: const Size(double.infinity, 56), // Larger Touch target
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.largeRadius,
+              ),
+            ),
+            child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+          ),
         ),
       ),
     );
