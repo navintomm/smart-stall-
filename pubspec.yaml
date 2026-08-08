@@ -1,5 +1,5 @@
 name: smartstall_operator
-description: "A new Flutter project."
+description: "SmartStall Operator – Automated Cleaning Robot Controller"
 publish_to: 'none'
 version: 0.1.0
 
@@ -16,11 +16,25 @@ dependencies:
   logger: ^2.0.2
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
+  camera: ^0.11.0+2
+  opencv_dart: ^1.4.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    background_color: "#FFFFFF"
+    theme_color: "#67E279"
 
 flutter:
   uses-material-design: true
@@ -31,4 +45,3 @@ flutter:
     - assets/lottie/
     - assets/images/
     - assets/fonts/
-
