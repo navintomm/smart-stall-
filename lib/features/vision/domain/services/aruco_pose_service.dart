@@ -10,6 +10,7 @@ class ArucoPoseRequest {
   final Uint8List imageBytes;
   final int width;
   final int height;
+  final int rowStride;
   final int targetMarkerId;
   final double markerSizeMeters;
   final CameraCalibration? calibration;
@@ -19,6 +20,7 @@ class ArucoPoseRequest {
     required this.imageBytes,
     required this.width,
     required this.height,
+    required this.rowStride,
     required this.targetMarkerId,
     required this.markerSizeMeters,
     this.calibration,
@@ -47,12 +49,25 @@ class ArucoPoseService {
       cv.Mat? rotMat;
 
       try {
-        // 1. Create Grayscale Mat from Y-plane bytes
+        // 1. Create Grayscale Mat from Y-plane bytes, handling row stride padding
+        Uint8List processedBytes = request.imageBytes;
+        if (request.rowStride > request.width) {
+          processedBytes = Uint8List(request.width * request.height);
+          for (int i = 0; i < request.height; i++) {
+            processedBytes.setRange(
+              i * request.width, 
+              (i + 1) * request.width, 
+              request.imageBytes, 
+              i * request.rowStride
+            );
+          }
+        }
+
         grayMat = cv.Mat.fromList(
           request.height,
           request.width,
           cv.MatType.CV_8UC1,
-          request.imageBytes,
+          processedBytes,
         );
 
         // 2. Detect ArUco Marker

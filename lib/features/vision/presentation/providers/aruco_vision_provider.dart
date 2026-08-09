@@ -12,6 +12,13 @@ class ArucoVisionState {
   final double fps;
   final bool isProcessing;
   final String status;
+  
+  // Debug diagnostics
+  final int frameWidth;
+  final int frameHeight;
+  final int rowStride;
+  final String debugIds;
+  final String debugError;
 
   ArucoVisionState({
     this.detection,
@@ -19,6 +26,11 @@ class ArucoVisionState {
     this.fps = 0.0,
     this.isProcessing = false,
     this.status = 'Starting...',
+    this.frameWidth = 0,
+    this.frameHeight = 0,
+    this.rowStride = 0,
+    this.debugIds = '[]',
+    this.debugError = '',
   });
 
   ArucoVisionState copyWith({
@@ -27,6 +39,11 @@ class ArucoVisionState {
     double? fps,
     bool? isProcessing,
     String? status,
+    int? frameWidth,
+    int? frameHeight,
+    int? rowStride,
+    String? debugIds,
+    String? debugError,
     bool clearDetection = false,
   }) {
     return ArucoVisionState(
@@ -35,6 +52,11 @@ class ArucoVisionState {
       fps: fps ?? this.fps,
       isProcessing: isProcessing ?? this.isProcessing,
       status: status ?? this.status,
+      frameWidth: frameWidth ?? this.frameWidth,
+      frameHeight: frameHeight ?? this.frameHeight,
+      rowStride: rowStride ?? this.rowStride,
+      debugIds: debugIds ?? this.debugIds,
+      debugError: debugError ?? this.debugError,
     );
   }
 }
@@ -60,6 +82,7 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
     required Uint8List yPlaneBytes,
     required int width,
     required int height,
+    required int rowStride,
   }) async {
     if (state.isProcessing) return;
 
@@ -80,6 +103,7 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
       imageBytes: yPlaneBytes,
       width: width,
       height: height,
+      rowStride: rowStride,
       targetMarkerId: VisionConstants.targetMarkerId,
       markerSizeMeters: VisionConstants.markerSizeMeters,
       calibration: calibration,
@@ -95,6 +119,11 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
           fps: _currentFps,
           isProcessing: false,
           clearDetection: response.detection == null,
+          frameWidth: width,
+          frameHeight: height,
+          rowStride: rowStride,
+          debugIds: response.detection != null ? '[${response.detection!.markerId}]' : '[]',
+          debugError: '',
         );
       }
     } catch (e) {
@@ -103,6 +132,7 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
           isProcessing: false,
           clearDetection: true,
           status: 'Error: $e',
+          debugError: e.toString(),
         );
       }
     }

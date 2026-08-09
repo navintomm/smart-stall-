@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
@@ -72,6 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       yPlaneBytes: plane.bytes,
       width: image.width,
       height: image.height,
+      rowStride: plane.bytesPerRow,
     );
   }
 

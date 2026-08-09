@@ -42,12 +42,6 @@ class CameraCalibrationService {
         }
       }
 
-      final criteria = cv.TermCriteria(
-        cv.TERM_COUNT + cv.TERM_EPS,
-        30,
-        0.1,
-      );
-
       try {
         for (final bytes in request.imageBytesList) {
           final grayMat = cv.Mat.fromList(
