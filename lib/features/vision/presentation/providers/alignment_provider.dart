@@ -2,15 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/vision_constants.dart';
 import '../../domain/models/alignment_result.dart';
 import 'aruco_vision_provider.dart';
-import 'calibration_provider.dart';
 
 final alignmentProvider = Provider<AlignmentResult>((ref) {
   final visionState = ref.watch(arucoVisionProvider);
-  final calibration = ref.watch(calibrationProvider);
-
-  if (!calibration.isValid) {
-    return AlignmentResult.empty(AlignmentStatus.error);
-  }
 
   if (visionState.detection == null) {
     return AlignmentResult.empty(AlignmentStatus.markerLost);
@@ -61,7 +55,7 @@ final smoothedAlignmentProvider = StateNotifierProvider<SmoothedAlignmentNotifie
 class SmoothedAlignmentNotifier extends StateNotifier<AlignmentResult> {
   final double alpha = 0.3; // Smoothing factor (0 < alpha <= 1)
 
-  SmoothedAlignmentNotifier(AlignmentResult initial) : super(initial);
+  SmoothedAlignmentNotifier(super.initial);
 
   @override
   set state(AlignmentResult newState) {

@@ -1,7 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
-import 'package:opencv_dart/opencv_dart.dart' as cv;
 import '../../../core/providers/di_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -331,7 +331,7 @@ class _CameraLoadingView extends StatelessWidget {
 
 // ─── Marker Bounding Box Painter ─────────────────────────────────────────────
 class _MarkerPainter extends CustomPainter {
-  final List<cv.Point2f> corners;
+  final List<math.Point<double>> corners;
   final Size imageSize;
 
   _MarkerPainter({required this.corners, required this.imageSize});

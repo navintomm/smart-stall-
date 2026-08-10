@@ -1,8 +1,8 @@
-import 'package:opencv_dart/opencv_dart.dart' as cv;
+import 'dart:math' as math;
 
 class ArucoDetectionResult {
   final int markerId;
-  final List<cv.Point2f> corners;
+  final List<math.Point<double>> corners;
   final double confidence; // 0.0 to 1.0 based on temporal stability
   final DateTime timestamp;
 

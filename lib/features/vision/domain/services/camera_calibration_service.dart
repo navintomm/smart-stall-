@@ -1,5 +1,5 @@
 import 'dart:isolate';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import '../models/camera_calibration.dart';
 
@@ -129,7 +129,7 @@ class CameraCalibrationService {
           isValid: true,
         );
       } catch (e) {
-        print('Calibration error: $e');
+        debugPrint('Calibration failed: $e');
         return CameraCalibration.empty();
       } finally {
         for (final mat in matsToDispose) {

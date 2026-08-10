@@ -1,7 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:opencv_dart/opencv_dart.dart' as cv;
 import '../../../shared/widgets/navigation/navigation_header.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
@@ -258,7 +258,7 @@ class _ArucoScannerScreenState extends ConsumerState<ArucoScannerScreen> {
 }
 
 class BoundingBoxPainter extends CustomPainter {
-  final List<cv.Point2f> corners;
+  final List<math.Point<double>> corners;
   final Size imageSize;
   final Size screenSize;
 

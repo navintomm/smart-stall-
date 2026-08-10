@@ -51,13 +51,13 @@ class TeachingPage extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.lg),
 
                     // Joystick / Control pad
-                    _SectionLabel(label: 'Movement Control'),
+                    const _SectionLabel(label: 'Movement Control'),
                     const SizedBox(height: AppSpacing.sm),
                     const Center(child: ControlPad()),
                     const SizedBox(height: AppSpacing.lg),
 
                     // Servo sliders
-                    _SectionLabel(label: 'Joint Control'),
+                    const _SectionLabel(label: 'Joint Control'),
                     const SizedBox(height: AppSpacing.sm),
                     _ServoSection(),
                     const SizedBox(height: AppSpacing.xl),
@@ -252,11 +252,11 @@ class _RecordingControls extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.largeRadius),
-        title: Row(
+        title: const Row(
           children: [
             Icon(AppIcons.library, color: AppColors.primary, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            const Text('Save Routine'),
+            SizedBox(width: AppSpacing.sm),
+            Text('Save Routine'),
           ],
         ),
         content: Column(
@@ -305,11 +305,11 @@ class _RecordingControls extends ConsumerWidget {
                   .saveAsRoutine(controller.text);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text('Routine saved to Motion Library'),
                   backgroundColor: AppColors.successGreen,
                   behavior: SnackBarBehavior.floating,
-                  shape: const StadiumBorder(),
+                  shape: StadiumBorder(),
                 ),
               );
             },

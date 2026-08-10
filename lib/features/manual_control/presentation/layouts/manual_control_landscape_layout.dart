@@ -73,16 +73,16 @@ class _ManualControlLandscapeLayoutState extends ConsumerState<ManualControlLand
                         ),
                       ),
                       const SizedBox(width: AppSpacing.lg),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           children: [
-                            const SectionHeader(title: 'Command Log'),
-                            const SizedBox(height: AppSpacing.sm),
-                            const SizedBox(height: 200, child: CommandLogList()),
-                            const SizedBox(height: AppSpacing.lg),
-                            const SectionHeader(title: 'System Health'),
-                            const SizedBox(height: AppSpacing.sm),
-                            const SystemHealthPanel(),
+                            SectionHeader(title: 'Command Log'),
+                            SizedBox(height: AppSpacing.sm),
+                            SizedBox(height: 200, child: CommandLogList()),
+                            SizedBox(height: AppSpacing.lg),
+                            SectionHeader(title: 'System Health'),
+                            SizedBox(height: AppSpacing.sm),
+                            SystemHealthPanel(),
                           ],
                         ),
                       ),

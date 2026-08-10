@@ -183,7 +183,7 @@ class _SettingsSectionCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textMuted,
               size: 22,

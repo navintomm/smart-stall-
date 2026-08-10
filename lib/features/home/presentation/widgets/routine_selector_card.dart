@@ -52,7 +52,7 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
           // Section label
           Row(
             children: [
-              Icon(AppIcons.library, size: 18, color: AppColors.primary),
+              const Icon(AppIcons.library, size: 18, color: AppColors.primary),
               const SizedBox(width: AppSpacing.sm),
               Text('Selected Routine', style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
