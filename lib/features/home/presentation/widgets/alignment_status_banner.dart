@@ -3,8 +3,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../vision/domain/services/auto_alignment_service.dart';
+
 /// Animated status banner that transitions between "Aligning..." and "Ready to Start".
-class AlignmentStatusBanner extends StatelessWidget {
+class AlignmentStatusBanner extends ConsumerWidget {
   final double alignmentScore; // 0.0 – 1.0
   final bool hasMarker;
 
@@ -17,33 +20,55 @@ class AlignmentStatusBanner extends StatelessWidget {
   bool get _isReady => hasMarker && alignmentScore >= 0.95;
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (child, animation) => ScaleTransition(
-        scale: animation,
-        child: FadeTransition(opacity: animation, child: child),
-      ),
-      child: _isReady
-          ? _BannerPill(
-              key: const ValueKey('ready'),
-              icon: Icons.check_circle_rounded,
-              label: 'Ready to Start',
-              backgroundColor: AppColors.successGreen.withOpacity(0.15),
-              borderColor: AppColors.successGreen,
-              textColor: AppColors.successGreen,
-              iconColor: AppColors.successGreen,
-            )
-          : _BannerPill(
-              key: const ValueKey('aligning'),
-              icon: Icons.adjust_rounded,
-              label: hasMarker ? 'Aligning...' : 'Scanning for Marker...',
-              backgroundColor: AppColors.warningOrange.withOpacity(0.12),
-              borderColor: AppColors.warningOrange,
-              textColor: AppColors.warningOrange,
-              iconColor: AppColors.warningOrange,
-              animate: true,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            transitionBuilder: (child, animation) => ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
             ),
+            child: _isReady
+                ? _BannerPill(
+                    key: const ValueKey('ready'),
+                    icon: Icons.check_circle_rounded,
+                    label: 'Ready to Start',
+                    backgroundColor: AppColors.successGreen.withOpacity(0.15),
+                    borderColor: AppColors.successGreen,
+                    textColor: AppColors.successGreen,
+                    iconColor: AppColors.successGreen,
+                  )
+                : _BannerPill(
+                    key: const ValueKey('aligning'),
+                    icon: Icons.adjust_rounded,
+                    label: hasMarker ? 'Aligning...' : 'Scanning for Marker...',
+                    backgroundColor: AppColors.warningOrange.withOpacity(0.12),
+                    borderColor: AppColors.warningOrange,
+                    textColor: AppColors.warningOrange,
+                    iconColor: AppColors.warningOrange,
+                    animate: true,
+                  ),
+          ),
+        ),
+        if (!_isReady && hasMarker) ...[
+          const SizedBox(width: AppSpacing.md),
+          TextButton.icon(
+            onPressed: () {
+              ref.read(autoAlignmentServiceProvider).startAutoAlignment();
+            },
+            icon: const Icon(Icons.auto_mode, size: 20),
+            label: const Text('Auto-Align'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

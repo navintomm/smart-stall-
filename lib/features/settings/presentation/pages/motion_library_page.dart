@@ -5,7 +5,6 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
-import '../../../../shared/widgets/navigation/navigation_header.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 import '../../../../shared/widgets/feedback/empty_state_widget.dart';
 import '../providers/motion_library_provider.dart';
@@ -21,32 +20,39 @@ class MotionLibraryPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const NavigationHeader(
-                title: 'Motion Library', icon: AppIcons.library),
-            Expanded(
-              child: routines.isEmpty
-                  ? const EmptyStateWidget(
-                      icon: AppIcons.library,
-                      message:
-                          'No routines saved. Go to Settings → Arm Teaching to record one.',
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      itemCount: routines.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (ctx, i) => _RoutineCard(
-                        routine: routines[i],
-                        isDefault:
-                            routines[i].id == libraryState.defaultRoutineId,
-                      ),
-                    ),
-            ),
-          ],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'Motion Library',
+          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: routines.isEmpty
+            ? const EmptyStateWidget(
+                icon: AppIcons.library,
+                message: 'No routines saved. Go to Settings → Arm Teaching to record one.',
+              )
+            : GridView.builder(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSpacing.lg,
+                  mainAxisSpacing: AppSpacing.lg,
+                  childAspectRatio: 2.2,
+                ),
+                itemCount: routines.length,
+                itemBuilder: (ctx, i) => _RoutineCard(
+                  routine: routines[i],
+                  isDefault: routines[i].id == libraryState.defaultRoutineId,
+                ),
+              ),
       ),
     );
   }

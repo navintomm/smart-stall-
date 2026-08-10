@@ -36,7 +36,6 @@ class ArucoPoseResponse {
 }
 
 class ArucoPoseService {
-  /// Detects ArUco marker and estimates pose. Runs entirely in a background isolate.
   static Future<ArucoPoseResponse> detectAndEstimatePose(
       ArucoPoseRequest request) async {
     return Isolate.run(() {
@@ -46,11 +45,6 @@ class ArucoPoseService {
       cv.ArucoDetector? detector;
       cv.VecVecPoint2f? cornersList;
       cv.VecI32? idsList;
-      cv.Mat? cameraMatrixMat;
-      cv.Mat? distCoeffsMat;
-      cv.Mat? rvec;
-      cv.Mat? tvec;
-      cv.Mat? rotMat;
 
       try {
         // 1. Create Grayscale Mat from Y-plane bytes, handling row stride padding
@@ -74,9 +68,16 @@ class ArucoPoseService {
           processedBytes,
         );
 
-        // 2. Detect ArUco Marker
+        // 2. Detect ArUco Marker with tuned parameters from Android app
         dict = cv.ArucoDictionary.predefined(request.dictType);
-        params = cv.ArucoDetectorParameters.empty();
+        params = cv.ArucoDetectorParameters.empty()
+          ..adaptiveThreshWinSizeMin = 3
+          ..adaptiveThreshWinSizeMax = 23
+          ..adaptiveThreshWinSizeStep = 10
+          ..minMarkerPerimeterRate = 0.05
+          ..maxMarkerPerimeterRate = 4.0
+          ..errorCorrectionRate = 0.6;
+          
         detector = cv.ArucoDetector.create(dict, params);
 
         final result = detector.detectMarkers(grayMat);
@@ -97,123 +98,76 @@ class ArucoPoseService {
         }
 
         if (targetIndex == -1) {
-          // Target marker not found
           return ArucoPoseResponse(detection: null, pose: null);
         }
 
-        final targetCorners = cornersList[targetIndex]; // VecPoint2f
+        final targetCorners = cornersList[targetIndex];
+        final p0 = targetCorners[0]; // top-left
+        final p1 = targetCorners[1]; // top-right
+        final p2 = targetCorners[2]; // bottom-right
+        final p3 = targetCorners[3]; // bottom-left
+
         final points = [
-          math.Point<double>(targetCorners[0].x, targetCorners[0].y),
-          math.Point<double>(targetCorners[1].x, targetCorners[1].y),
-          math.Point<double>(targetCorners[2].x, targetCorners[2].y),
-          math.Point<double>(targetCorners[3].x, targetCorners[3].y),
+          math.Point<double>(p0.x, p0.y),
+          math.Point<double>(p1.x, p1.y),
+          math.Point<double>(p2.x, p2.y),
+          math.Point<double>(p3.x, p3.y),
         ];
 
         final detection = ArucoDetectionResult(
           markerId: request.targetMarkerId,
           corners: points,
-          confidence: 1.0, // Base confidence, could be filtered temporally later
+          confidence: 1.0,
         );
 
-        // 3. Pose Estimation (with fallback if uncalibrated)
-        MarkerPose? pose;
+        // 3. Pose Estimation using Pinhole Camera Model (from Android app)
         
-        // 3D object points in marker coordinate system (Z=0, origin at center)
-        final halfSize = request.markerSizeMeters / 2.0;
-        final objPointsMat = cv.Mat.from2DList([
-          <double>[-halfSize, halfSize, 0.0],
-          <double>[halfSize, halfSize, 0.0],
-          <double>[halfSize, -halfSize, 0.0],
-          <double>[-halfSize, -halfSize, 0.0],
-        ], cv.MatType.CV_32FC1);
-        
-        final targetCornersMat = cv.Mat.from2DList([
-          <double>[targetCorners[0].x, targetCorners[0].y],
-          <double>[targetCorners[1].x, targetCorners[1].y],
-          <double>[targetCorners[2].x, targetCorners[2].y],
-          <double>[targetCorners[3].x, targetCorners[3].y],
-        ], cv.MatType.CV_32FC1);
-        
-        // Build Camera Matrix
-        cameraMatrixMat = cv.Mat.zeros(3, 3, cv.MatType.CV_64FC1);
+        // Calculate pixel width (average of top and bottom edges)
+        final topEdge = math.sqrt(math.pow(p1.x - p0.x, 2) + math.pow(p1.y - p0.y, 2));
+        final bottomEdge = math.sqrt(math.pow(p2.x - p3.x, 2) + math.pow(p2.y - p3.y, 2));
+        final pixelWidth = (topEdge + bottomEdge) / 2.0;
+
+        // Hard filter on marker size
+        if (pixelWidth < 20.0) {
+          return ArucoPoseResponse(detection: null, pose: null); // Too small/far
+        }
+
         final hasCalibration = request.calibration != null && request.calibration!.isValid;
-        
         final double fx = hasCalibration ? request.calibration!.cameraMatrix[0][0] : request.width.toDouble();
-        final double fy = hasCalibration ? request.calibration!.cameraMatrix[1][1] : request.width.toDouble();
+        final double fy = hasCalibration ? request.calibration!.cameraMatrix[1][1] : request.height.toDouble();
         final double cx = hasCalibration ? request.calibration!.cameraMatrix[0][2] : request.width / 2.0;
         final double cy = hasCalibration ? request.calibration!.cameraMatrix[1][2] : request.height / 2.0;
-        
-        cameraMatrixMat.set<double>(0, 0, fx);
-        cameraMatrixMat.set<double>(1, 1, fy);
-        cameraMatrixMat.set<double>(0, 2, cx);
-        cameraMatrixMat.set<double>(1, 2, cy);
-        cameraMatrixMat.set<double>(2, 2, 1.0);
-        
-        // Build Distortion Coefficients
-        final distCoeffsList = hasCalibration ? request.calibration!.distCoeffs : <double>[0.0, 0.0, 0.0, 0.0, 0.0];
-        distCoeffsMat = cv.Mat.zeros(distCoeffsList.length, 1, cv.MatType.CV_64FC1);
-        for (int i = 0; i < distCoeffsList.length; i++) {
-          distCoeffsMat.set<double>(i, 0, distCoeffsList[i]);
-        }
 
-        final (solved, rvecRes, tvecRes) = cv.solvePnP(
-          objPointsMat,
-          targetCornersMat,
-          cameraMatrixMat,
-          distCoeffsMat,
+        // distance_m = (real_marker_size_m × focal_length_px) / marker_pixel_width
+        final distanceM = (request.markerSizeMeters * fx) / pixelWidth;
+
+        // Center point in pixels
+        final centerX = (p0.x + p1.x + p2.x + p3.x) / 4.0;
+        final centerY = (p0.y + p1.y + p2.y + p3.y) / 4.0;
+
+        // Approximate X, Y in meters using pinhole projection
+        final xM = (centerX - cx) * distanceM / fx;
+        final yM = (centerY - cy) * distanceM / fy;
+        final zM = distanceM;
+
+        // Rotation angle of top edge
+        final dy = p1.y - p0.y;
+        final dx = p1.x - p0.x;
+        final angleRad = math.atan2(dy, dx);
+        final angleDeg = angleRad * 180.0 / math.pi;
+
+        final pose = MarkerPose(
+          x: xM,
+          y: yM,
+          z: zM,
+          roll: 0.0,
+          pitch: 0.0,
+          yaw: angleDeg, // Map 2D rotation to yaw
         );
-
-        if (solved) {
-          rvec = rvecRes;
-          tvec = tvecRes;
-
-          // tvec is translation (x,y,z) in meters
-          final tx = tvec.at<double>(0, 0);
-          final ty = tvec.at<double>(1, 0);
-          final tz = tvec.at<double>(2, 0);
-
-          // rvec is rotation vector, convert to rotation matrix
-          rotMat = cv.Rodrigues(rvec);
-
-          // Extract Euler angles (roll, pitch, yaw) from rotation matrix
-          final r32 = rotMat.at<double>(2, 1);
-          final r33 = rotMat.at<double>(2, 2);
-          final r31 = rotMat.at<double>(2, 0);
-          final r21 = rotMat.at<double>(1, 0);
-          final r11 = rotMat.at<double>(0, 0);
-
-          // Standard conversion from Rotation Matrix to Euler angles (in radians)
-          final pitchRad = -math.asin(r31);
-          final rollRad = math.atan2(r32, r33);
-          final yawRad = math.atan2(r21, r11);
-
-          // Convert to degrees
-          final pitch = pitchRad * 180.0 / math.pi;
-          final roll = rollRad * 180.0 / math.pi;
-          final yaw = yawRad * 180.0 / math.pi;
-
-          pose = MarkerPose(
-            x: tx,
-            y: ty,
-            z: tz,
-            roll: roll,
-            pitch: pitch,
-            yaw: yaw,
-          );
-        }
-        
-        objPointsMat.dispose();
-        targetCornersMat.dispose();
 
         return ArucoPoseResponse(detection: detection, pose: pose);
       } finally {
-        // IMPORTANT: Prevent memory leaks
         grayMat?.dispose();
-        cameraMatrixMat?.dispose();
-        distCoeffsMat?.dispose();
-        rvec?.dispose();
-        tvec?.dispose();
-        rotMat?.dispose();
         detector?.dispose();
         dict?.dispose();
         params?.dispose();

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/di_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -89,11 +90,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(children: [
-            const Icon(AppIcons.play, color: Colors.black, size: 18),
+            const Icon(AppIcons.play, color: Colors.white, size: 18),
             const SizedBox(width: AppSpacing.sm),
             Text(
               'Routine started',
-              style: AppTextStyles.bodyLarge.copyWith(color: Colors.black),
+              style: AppTextStyles.bodyLarge.copyWith(color: Colors.white),
             ),
           ]),
           backgroundColor: AppColors.successGreen,
@@ -130,55 +131,171 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final markerCorners = visionState.detection?.corners ?? [];
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
-        child: Column(
+        child: Row(
           children: [
-            // ── App Bar ───────────────────────────────────────────────────
-            _HomeAppBar(cameraStatus: visionState.status, robotStatus: robotStatus),
-
-            // ── Camera + HUD (fills most of screen) ──────────────────────
+            // ── LEFT PANEL: Camera (65%) ────────────────────────────────────
             Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Camera preview or loading state
-                  if (_cameraController != null &&
-                      _cameraController!.value.isInitialized)
-                    CameraPreview(_cameraController!)
-                  else
-                    _CameraLoadingView(status: visionState.status),
+              flex: 65,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Camera preview or loading state
+                    if (_cameraController != null &&
+                        _cameraController!.value.isInitialized)
+                      CameraPreview(_cameraController!)
+                    else
+                      _CameraLoadingView(status: visionState.status),
 
-                  // Bounding box painter
-                  if (markerCorners.length == 4)
-                    CustomPaint(
-                      painter: _MarkerPainter(
-                        corners: markerCorners,
-                        imageSize: Size(
-                          _cameraController!.value.previewSize!.height,
-                          _cameraController!.value.previewSize!.width,
+                    // Bounding box painter
+                    if (markerCorners.length == 4)
+                      CustomPaint(
+                        painter: _MarkerPainter(
+                          corners: markerCorners,
+                          imageSize: Size(
+                            _cameraController!.value.previewSize!.height, // Note: Android native rotation might flip width/height
+                            _cameraController!.value.previewSize!.width,
+                          ),
                         ),
                       ),
-                    ),
 
-                  // HUD overlay
-                  HomeHudOverlay(
-                    markerId: detectedId,
-                    distanceText: distanceText,
-                    alignmentScore: alignmentScore,
-                    cameraStatus: visionState.status,
-                    robotStatus: robotStatus,
-                  ),
-                ],
+                    // HUD overlay
+                    HomeHudOverlay(
+                      markerId: detectedId,
+                      distanceText: distanceText,
+                      alignmentScore: alignmentScore,
+                      cameraStatus: visionState.status,
+                      robotStatus: robotStatus,
+                    ),
+                  ],
+                ),
               ),
             ),
 
-            // ── Bottom Panel (white surface) ──────────────────────────────
-            _BottomPanel(
-              alignmentScore: alignmentScore,
-              hasMarker: detectedId != null,
-              isReady: isReady,
-              onStart: _onStart,
+            // ── RIGHT PANEL: Action & Status (35%) ─────────────────────────
+            Expanded(
+              flex: 35,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Top Row: Branding + Settings
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Image.asset(
+                              'assets/images/smartstall_logo.png',
+                              width: 32,
+                              height: 32,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'SmartStall',
+                              style: AppTextStyles.titleLarge.copyWith(
+                                color: AppColors.text,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => context.go('/settings'),
+                          icon: const Icon(AppIcons.settings, color: AppColors.text, size: 28),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: const EdgeInsets.all(12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: AppColors.borderLight, width: 1.5),
+                            ),
+                            elevation: 2,
+                            shadowColor: Colors.black.withOpacity(0.1),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // Compact Status Card
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.borderLight, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Alignment', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                              Text(
+                                '${(alignmentScore * 100).toStringAsFixed(0)}%', 
+                                style: AppTextStyles.titleLarge.copyWith(
+                                  color: alignmentScore >= 0.95 ? AppColors.successGreen : AppColors.warningOrange, 
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Divider(height: 1, color: AppColors.borderLight),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Distance', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                              Text(
+                                distanceText, 
+                                style: AppTextStyles.titleLarge.copyWith(
+                                  color: AppColors.text, 
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    // Alignment Banner
+                    AlignmentStatusBanner(
+                      alignmentScore: alignmentScore,
+                      hasMarker: detectedId != null,
+                    ),
+
+                    const Spacer(),
+                    
+                    // Routine Selector & Start
+                    RoutineSelectorCard(
+                      isReady: isReady,
+                      onStart: _onStart,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -187,121 +304,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ─── App Bar ─────────────────────────────────────────────────────────────────
-class _HomeAppBar extends StatelessWidget {
-  final String cameraStatus;
-  final String robotStatus;
-  const _HomeAppBar(
-      {required this.cameraStatus, required this.robotStatus});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Image.asset(
-            'assets/images/smartstall_logo.png',
-            width: 40,
-            height: 40,
-            filterQuality: FilterQuality.high,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SmartStall',
-                  style: AppTextStyles.titleLarge.copyWith(color: Colors.white),
-                ),
-                Text(
-                  'Operator Home',
-                  style: AppTextStyles.bodySmall.copyWith(color: Colors.white54),
-                ),
-              ],
-            ),
-          ),
-          // Live indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.dangerRed.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.dangerRed.withOpacity(0.5)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: AppColors.dangerRed,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'LIVE',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.dangerRed,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Bottom Panel ─────────────────────────────────────────────────────────────
-class _BottomPanel extends StatelessWidget {
-  final double alignmentScore;
-  final bool hasMarker;
-  final bool isReady;
-  final VoidCallback onStart;
-
-  const _BottomPanel({
-    required this.alignmentScore,
-    required this.hasMarker,
-    required this.isReady,
-    required this.onStart,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.backgroundLight,
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Status Banner centred
-          Center(
-            child: AlignmentStatusBanner(
-              alignmentScore: alignmentScore,
-              hasMarker: hasMarker,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          // Routine Selector + Start Button
-          RoutineSelectorCard(
-            isReady: isReady,
-            onStart: onStart,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─── Camera Loading ───────────────────────────────────────────────────────────
 class _CameraLoadingView extends StatelessWidget {

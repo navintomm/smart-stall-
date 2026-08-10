@@ -7,7 +7,6 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/providers/developer_mode_provider.dart';
-import '../../../shared/widgets/foundation/glass_card.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -18,89 +17,85 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          onPressed: () => context.go('/'),
+        ),
+        title: Text(
+          'Operator Settings',
+          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // ── Header ────────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Image.asset(
-                      'assets/images/smartstall_logo.png',
-                      width: 48,
-                      height: 48,
-                      filterQuality: FilterQuality.high,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text('Settings', style: AppTextStyles.displayMedium),
-                    Text(
-                      'Operator configuration',
-                      style: AppTextStyles.bodyMedium,
-                    ),
-                  ],
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
+          children: [
+            _SettingsGroup(
+              title: 'ARM CONTROL',
+              children: [
+                _SettingsTile(
+                  icon: AppIcons.training,
+                  iconColor: const Color(0xFF6C63FF),
+                  title: 'Robotic Arm Teaching',
+                  subtitle: 'Record and teach cleaning routines',
+                  onTap: () => context.push(AppRoutes.teaching),
                 ),
-              ),
+                const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                _SettingsTile(
+                  icon: AppIcons.robot,
+                  iconColor: AppColors.dangerRed,
+                  title: 'Manual Control',
+                  subtitle: 'Direct control without recording',
+                  badge: 'MAINTENANCE',
+                  badgeColor: AppColors.dangerRed,
+                  onTap: () => context.push(AppRoutes.manualControl),
+                ),
+              ],
             ),
-
-            // ── Section Cards ─────────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _SettingsSectionCard(
-                    icon: AppIcons.training,
-                    iconColor: const Color(0xFF6C63FF),
-                    title: 'Robotic Arm Teaching',
-                    subtitle: 'Record and teach cleaning routines',
-                    onTap: () => context.push(AppRoutes.teaching),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsSectionCard(
-                    icon: AppIcons.library,
-                    iconColor: AppColors.informationCyan,
-                    title: 'Motion Library',
-                    subtitle: 'Manage all saved cleaning routines',
-                    onTap: () => context.push(AppRoutes.motionLibrary),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsSectionCard(
-                    icon: AppIcons.defaultRoutine,
-                    iconColor: AppColors.warningOrange,
-                    title: 'Default Routine',
-                    subtitle: 'Set which routine loads on Home screen',
-                    onTap: () => context.push(AppRoutes.defaultRoutine),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsSectionCard(
-                    icon: AppIcons.robot,
-                    iconColor: AppColors.dangerRed,
-                    title: 'Manual Control',
-                    subtitle: 'Maintenance & testing mode',
-                    badge: 'MAINTENANCE',
-                    badgeColor: AppColors.dangerRed,
-                    onTap: () => context.push(AppRoutes.manualControl),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsSectionCard(
-                    icon: Icons.camera_alt_outlined,
-                    iconColor: AppColors.informationCyan,
-                    title: 'Camera Calibration',
-                    subtitle: 'Calibrate operator camera for ArUco',
-                    onTap: () => context.push(AppRoutes.cameraCalibration),
-                  ),
-                  const SizedBox(height: AppSpacing.xxxl),
-                ]),
-              ),
+            const SizedBox(height: AppSpacing.xl),
+            
+            _SettingsGroup(
+              title: 'ROUTINES',
+              children: [
+                _SettingsTile(
+                  icon: AppIcons.library,
+                  iconColor: AppColors.informationCyan,
+                  title: 'Motion Library',
+                  subtitle: 'Manage all saved cleaning routines',
+                  onTap: () => context.push(AppRoutes.motionLibrary),
+                ),
+                const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                _SettingsTile(
+                  icon: AppIcons.defaultRoutine,
+                  iconColor: AppColors.warningOrange,
+                  title: 'Default Routine',
+                  subtitle: 'Choose routine used by Start Cleaning',
+                  onTap: () => context.push(AppRoutes.defaultRoutine),
+                ),
+              ],
             ),
-
-            // ── Developer Mode Footer ─────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _DeveloperModeFooter(isUnlocked: devMode),
+            const SizedBox(height: AppSpacing.xl),
+            
+            _SettingsGroup(
+              title: 'VISION',
+              children: [
+                _SettingsTile(
+                  icon: Icons.camera_alt_outlined,
+                  iconColor: AppColors.primary,
+                  title: 'ArUco Camera Calibration',
+                  subtitle: 'Calibrate camera and marker distance',
+                  onTap: () => context.push(AppRoutes.cameraCalibration),
+                ),
+              ],
             ),
+            const SizedBox(height: AppSpacing.xxl),
+            
+            _DeveloperModeFooter(isUnlocked: devMode),
+            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),
@@ -108,8 +103,49 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-// ─── Section card ─────────────────────────────────────────────────────────────
-class _SettingsSectionCard extends StatelessWidget {
+class _SettingsGroup extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _SettingsGroup({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.sm),
+          child: Text(
+            title,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
@@ -118,7 +154,7 @@ class _SettingsSectionCard extends StatelessWidget {
   final String? badge;
   final Color? badgeColor;
 
-  const _SettingsSectionCard({
+  const _SettingsTile({
     required this.icon,
     required this.iconColor,
     required this.title,
@@ -130,37 +166,34 @@ class _SettingsSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: EdgeInsets.zero,
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            // Icon container
             Container(
-              width: 52,
-              height: 52,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: iconColor, size: 26),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: AppSpacing.lg),
-            // Text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(title, style: AppTextStyles.titleLarge.copyWith(fontSize: 16)),
+                      Text(title, style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600)),
                       if (badge != null) ...[
                         const SizedBox(width: AppSpacing.sm),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: badgeColor!.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(6),
@@ -170,7 +203,6 @@ class _SettingsSectionCard extends StatelessWidget {
                             style: AppTextStyles.bodySmall.copyWith(
                               color: badgeColor,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
                               fontSize: 10,
                             ),
                           ),
@@ -178,16 +210,12 @@ class _SettingsSectionCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(subtitle, style: AppTextStyles.bodyMedium),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textMuted,
-              size: 22,
-            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
           ],
         ),
       ),
@@ -195,28 +223,24 @@ class _SettingsSectionCard extends StatelessWidget {
   }
 }
 
-// ─── Developer Mode Footer ────────────────────────────────────────────────────
 class _DeveloperModeFooter extends ConsumerStatefulWidget {
   final bool isUnlocked;
   const _DeveloperModeFooter({required this.isUnlocked});
 
   @override
-  ConsumerState<_DeveloperModeFooter> createState() =>
-      _DeveloperModeFooterState();
+  ConsumerState<_DeveloperModeFooter> createState() => _DeveloperModeFooterState();
 }
 
 class _DeveloperModeFooterState extends ConsumerState<_DeveloperModeFooter> {
   void _onVersionTap() {
-    final unlocked =
-        ref.read(developerModeProvider.notifier).onVersionTap();
+    final unlocked = ref.read(developerModeProvider.notifier).onVersionTap();
     if (unlocked && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(children: [
             const Icon(AppIcons.unlock, color: Colors.white, size: 16),
             const SizedBox(width: AppSpacing.sm),
-            Text('Developer Mode Unlocked',
-                style: AppTextStyles.bodyLarge.copyWith(color: Colors.white)),
+            Text('Developer Mode Unlocked', style: AppTextStyles.bodyLarge.copyWith(color: Colors.white)),
           ]),
           backgroundColor: const Color(0xFF1E1E2E),
           behavior: SnackBarBehavior.floating,
@@ -229,36 +253,28 @@ class _DeveloperModeFooterState extends ConsumerState<_DeveloperModeFooter> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding:
-          const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.massive),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: _onVersionTap,
-            child: Text(
-              'SmartStall Operator v1.0.0',
-              style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.textMuted),
-              textAlign: TextAlign.center,
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _onVersionTap,
+          child: Text(
+            'SmartStall Operator v1.0.0',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        if (widget.isUnlocked) ...[
+          const SizedBox(height: AppSpacing.md),
+          TextButton.icon(
+            onPressed: () => context.push(AppRoutes.developerCenter),
+            icon: const Icon(AppIcons.developer, size: 16, color: AppColors.informationCyan),
+            label: Text(
+              'Open Developer Center',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.informationCyan),
             ),
           ),
-          if (widget.isUnlocked) ...[
-            const SizedBox(height: AppSpacing.md),
-            TextButton.icon(
-              onPressed: () => context.push(AppRoutes.developerCenter),
-              icon: const Icon(AppIcons.developer,
-                  size: 16, color: AppColors.informationCyan),
-              label: Text(
-                'Open Developer Center',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.informationCyan,
-                ),
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }

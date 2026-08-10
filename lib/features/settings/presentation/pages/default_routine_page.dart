@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../shared/widgets/navigation/navigation_header.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 import '../../../../shared/widgets/feedback/empty_state_widget.dart';
 import '../providers/motion_library_provider.dart';
@@ -21,22 +20,30 @@ class DefaultRoutinePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Default Routine',
+          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const NavigationHeader(
-              title: 'Default Routine',
-              icon: AppIcons.defaultRoutine,
-            ),
-
             // Description
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.lg),
               child: Text(
                 'The selected routine will appear pre-loaded on the Home screen, ready to start.',
                 style: AppTextStyles.bodyMedium,
+                textAlign: TextAlign.center,
               ),
             ),
 

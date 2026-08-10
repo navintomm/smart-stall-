@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../features/manual_control/presentation/widgets/camera_placeholder.dart';
-import '../../../../features/manual_control/presentation/widgets/control_pad.dart';
+import '../../../../features/manual_control/presentation/widgets/joystick_controller.dart';
 import '../../../../features/manual_control/presentation/widgets/servo_slider_card.dart';
 import '../../../../features/manual_control/presentation/providers/manual_control_provider.dart';
-import '../../../../shared/widgets/navigation/navigation_header.dart';
 import '../providers/routine_recording_provider.dart';
 import '../../domain/models/routine_recording_state.dart';
 
@@ -22,80 +22,133 @@ class TeachingPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Arm Teaching',
+          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            const NavigationHeader(
-              title: 'Arm Teaching',
-              icon: AppIcons.training,
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── LEFT ZONE: Status & Camera ──────────────────────────────
+              Expanded(
+                flex: 30,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Info banner
                     _InfoBanner(),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Camera preview
-                    const SizedBox(
-                      height: 200,
+                    const SizedBox(height: AppSpacing.md),
+                    const Expanded(
                       child: CameraPlaceholder(),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Recording status
+                    const SizedBox(height: AppSpacing.md),
                     _RecordingStatusCard(state: recordState),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Joystick / Control pad
-                    const _SectionLabel(label: 'Movement Control'),
-                    const SizedBox(height: AppSpacing.sm),
-                    const Center(child: ControlPad()),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Servo sliders
-                    const _SectionLabel(label: 'Joint Control'),
-                    const SizedBox(height: AppSpacing.sm),
-                    _ServoSection(),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Record / Stop buttons
-                    _RecordingControls(state: recordState),
-                    const SizedBox(height: AppSpacing.xl),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.xl),
+
+              // ── CENTER ZONE: Joystick ───────────────────────────────────
+              Expanded(
+                flex: 40,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.borderLight, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const _SectionLabel(label: 'Movement Control'),
+                      const SizedBox(height: AppSpacing.xxl),
+                      JoystickController(
+                        size: 240,
+                        onDirectionChanged: (offset) {
+                          final notifier = ref.read(manualControlProvider.notifier);
+                          if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
+                            notifier.sendCommand('STOP');
+                          } else if (offset.dy.abs() > offset.dx.abs()) {
+                            notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
+                          } else {
+                            notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xl),
+
+              // ── RIGHT ZONE: Joints & Controls ───────────────────────────
+              Expanded(
+                flex: 30,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _SectionLabel(label: 'Joint Control'),
+                    const SizedBox(height: AppSpacing.sm),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.borderLight, width: 1.5),
+                        ),
+                        child: ListView(
+                          children: [
+                            _ServoSection(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _RecordingControls(state: recordState),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ─── Info Banner ──────────────────────────────────────────────────────────────
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
 class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.informationCyan.withOpacity(0.08),
         borderRadius: AppRadius.mediumRadius,
         border: Border.all(color: AppColors.informationCyan.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(AppIcons.info, color: AppColors.informationCyan, size: 20),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'Move the robot arm to your desired positions, then press Record to capture the motion sequence.',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.informationCyan),
+              'Move the robot arm to your desired positions, then press Record to capture.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.informationCyan),
             ),
           ),
         ],
@@ -104,7 +157,6 @@ class _InfoBanner extends StatelessWidget {
   }
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
@@ -113,12 +165,12 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTextStyles.titleLarge.copyWith(fontSize: 15),
+      style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+      textAlign: TextAlign.center,
     );
   }
 }
 
-// ─── Recording Status Card ────────────────────────────────────────────────────
 class _RecordingStatusCard extends StatelessWidget {
   final RoutineRecordingState state;
   const _RecordingStatusCard({required this.state});
@@ -135,7 +187,7 @@ class _RecordingStatusCard extends StatelessWidget {
     final color = isRecording ? AppColors.dangerRed : AppColors.warningOrange;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: AppRadius.mediumRadius,
@@ -143,11 +195,7 @@ class _RecordingStatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            isRecording ? AppIcons.record : AppIcons.stopRecord,
-            color: color,
-            size: 18,
-          ),
+          Icon(isRecording ? AppIcons.record : AppIcons.stopRecord, color: color, size: 18),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -155,8 +203,7 @@ class _RecordingStatusCard extends StatelessWidget {
               children: [
                 Text(
                   isRecording ? 'Recording…' : 'Recording complete',
-                  style: AppTextStyles.bodyLarge
-                      .copyWith(color: color, fontWeight: FontWeight.w700),
+                  style: AppTextStyles.bodyMedium.copyWith(color: color, fontWeight: FontWeight.w700),
                 ),
                 Text(
                   '${state.frames.length} frames · $_elapsedFormatted',
@@ -171,7 +218,6 @@ class _RecordingStatusCard extends StatelessWidget {
   }
 }
 
-// ─── Servo Section ────────────────────────────────────────────────────────────
 class _ServoSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -187,7 +233,6 @@ class _ServoSection extends ConsumerWidget {
   }
 }
 
-// ─── Recording Controls ───────────────────────────────────────────────────────
 class _RecordingControls extends ConsumerWidget {
   final RoutineRecordingState state;
   const _RecordingControls({required this.state});
@@ -197,7 +242,6 @@ class _RecordingControls extends ConsumerWidget {
     final notifier = ref.read(routineRecordingProvider.notifier);
 
     if (state.status == RecordingStatus.saving) {
-      // Show save dialog trigger automatically
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showSaveDialog(context, ref);
       });
@@ -205,7 +249,6 @@ class _RecordingControls extends ConsumerWidget {
 
     return Row(
       children: [
-        // Record button
         Expanded(
           child: ElevatedButton.icon(
             onPressed: state.isRecording ? null : notifier.startRecording,
@@ -214,16 +257,14 @@ class _RecordingControls extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dangerRed,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               shape: const StadiumBorder(),
               elevation: 0,
               disabledBackgroundColor: AppColors.borderLight,
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
-        // Stop button
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: ElevatedButton.icon(
             onPressed: state.isRecording ? notifier.stopRecording : null,
@@ -232,8 +273,7 @@ class _RecordingControls extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.text,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               shape: const StadiumBorder(),
               elevation: 0,
               disabledBackgroundColor: AppColors.borderLight,
@@ -263,10 +303,7 @@ class _RecordingControls extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Give this routine a name so you can identify it in the Motion Library.',
-              style: AppTextStyles.bodyMedium,
-            ),
+            Text('Give this routine a name so you can identify it.', style: AppTextStyles.bodyMedium),
             const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: controller,
@@ -280,8 +317,7 @@ class _RecordingControls extends ConsumerWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: AppRadius.mediumRadius,
-                  borderSide:
-                      const BorderSide(color: AppColors.primary, width: 2),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(AppSpacing.lg),
               ),
@@ -294,19 +330,15 @@ class _RecordingControls extends ConsumerWidget {
               ref.read(routineRecordingProvider.notifier).discardRecording();
               Navigator.pop(ctx);
             },
-            child: Text('Discard',
-                style: AppTextStyles.bodyLarge
-                    .copyWith(color: AppColors.dangerRed)),
+            child: Text('Discard', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dangerRed)),
           ),
           ElevatedButton(
             onPressed: () {
-              ref
-                  .read(routineRecordingProvider.notifier)
-                  .saveAsRoutine(controller.text);
+              ref.read(routineRecordingProvider.notifier).saveAsRoutine(controller.text);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Routine saved to Motion Library'),
+                  content: Text('Routine saved'),
                   backgroundColor: AppColors.successGreen,
                   behavior: SnackBarBehavior.floating,
                   shape: StadiumBorder(),
@@ -315,7 +347,7 @@ class _RecordingControls extends ConsumerWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.black,
+              foregroundColor: Colors.white,
               shape: const StadiumBorder(),
             ),
             child: const Text('Save'),
