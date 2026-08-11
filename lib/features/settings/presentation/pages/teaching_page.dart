@@ -43,7 +43,7 @@ class TeachingPage extends ConsumerWidget {
             children: [
               // ── LEFT ZONE: Status & Camera ──────────────────────────────
               Expanded(
-                flex: 30,
+                flex: 25,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -72,9 +72,9 @@ class TeachingPage extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const _SectionLabel(label: 'Movement Control'),
-                      const SizedBox(height: AppSpacing.xxl),
+                      const SizedBox(height: AppSpacing.md),
                       JoystickController(
-                        size: 240,
+                        size: 180,
                         onDirectionChanged: (offset) {
                           final notifier = ref.read(manualControlProvider.notifier);
                           if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
@@ -94,7 +94,7 @@ class TeachingPage extends ConsumerWidget {
 
               // ── RIGHT ZONE: Joints & Controls ───────────────────────────
               Expanded(
-                flex: 30,
+                flex: 35,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

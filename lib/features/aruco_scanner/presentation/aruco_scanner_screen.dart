@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../vision/presentation/providers/aruco_vision_provider.dart';
 import '../../vision/presentation/providers/alignment_provider.dart';
+import '../../vision/presentation/providers/calibration_provider.dart';
 
 class ArucoScannerScreen extends ConsumerStatefulWidget {
   const ArucoScannerScreen({super.key});
@@ -84,7 +85,8 @@ class _ArucoScannerScreenState extends ConsumerState<ArucoScannerScreen> {
 
     final visionState = ref.watch(arucoVisionProvider);
     final alignmentState = ref.watch(smoothedAlignmentProvider);
-    final isCalibrated = visionState.status != 'Error: Camera is not calibrated.'; // simplistic check, but good enough
+    // Read calibration state from the real provider — not by checking a status string.
+    final isCalibrated = ref.watch(calibrationProvider).isValid;
 
     final markerCorners = visionState.detection?.corners ?? [];
     final detectedId = visionState.detection?.markerId;

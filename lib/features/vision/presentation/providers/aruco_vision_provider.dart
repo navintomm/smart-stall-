@@ -104,7 +104,7 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
       width: width,
       height: height,
       rowStride: rowStride,
-      targetMarkerId: VisionConstants.targetMarkerId,
+      // targetMarkerId defaults to -1 (accept any marker)
       markerSizeMeters: VisionConstants.markerSizeMeters,
       calibration: calibration,
     );

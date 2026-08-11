@@ -11,6 +11,7 @@ class ArucoPoseRequest {
   final int width;
   final int height;
   final int rowStride;
+  /// Set to -1 to accept any detected marker.
   final int targetMarkerId;
   final double markerSizeMeters;
   final CameraCalibration? calibration;
@@ -21,7 +22,7 @@ class ArucoPoseRequest {
     required this.width,
     required this.height,
     required this.rowStride,
-    required this.targetMarkerId,
+    this.targetMarkerId = -1, // -1 = accept any marker
     required this.markerSizeMeters,
     this.calibration,
     this.dictType = cv.PredefinedDictionaryType.DICT_4X4_50,
@@ -88,12 +89,34 @@ class ArucoPoseService {
           return ArucoPoseResponse(detection: null, pose: null);
         }
 
-        // Find the target marker
+        // Pick the best marker:
+        // - If targetMarkerId == -1 → pick any (choose the largest by pixel area).
+        // - Otherwise → prefer the requested ID; fall back to largest if not found.
         int targetIndex = -1;
+        double bestPixelWidth = -1.0;
+
         for (int i = 0; i < idsList.length; i++) {
-          if (idsList[i] == request.targetMarkerId) {
+          final corners = cornersList[i];
+          final top = math.sqrt(
+            math.pow(corners[1].x - corners[0].x, 2) +
+            math.pow(corners[1].y - corners[0].y, 2),
+          );
+          final bottom = math.sqrt(
+            math.pow(corners[2].x - corners[3].x, 2) +
+            math.pow(corners[2].y - corners[3].y, 2),
+          );
+          final pw = (top + bottom) / 2.0;
+
+          if (request.targetMarkerId != -1 && idsList[i] == request.targetMarkerId) {
+            // Exact match — always prefer this one
             targetIndex = i;
+            bestPixelWidth = pw;
             break;
+          }
+
+          if (pw > bestPixelWidth) {
+            bestPixelWidth = pw;
+            targetIndex = i;
           }
         }
 
@@ -101,6 +124,7 @@ class ArucoPoseService {
           return ArucoPoseResponse(detection: null, pose: null);
         }
 
+        final detectedId = idsList[targetIndex];
         final targetCorners = cornersList[targetIndex];
         final p0 = targetCorners[0]; // top-left
         final p1 = targetCorners[1]; // top-right
@@ -115,7 +139,7 @@ class ArucoPoseService {
         ];
 
         final detection = ArucoDetectionResult(
-          markerId: request.targetMarkerId,
+          markerId: detectedId, // Report the ACTUAL detected ID
           corners: points,
           confidence: 1.0,
         );
@@ -133,10 +157,26 @@ class ArucoPoseService {
         }
 
         final hasCalibration = request.calibration != null && request.calibration!.isValid;
-        final double fx = hasCalibration ? request.calibration!.cameraMatrix[0][0] : request.width.toDouble();
-        final double fy = hasCalibration ? request.calibration!.cameraMatrix[1][1] : request.height.toDouble();
-        final double cx = hasCalibration ? request.calibration!.cameraMatrix[0][2] : request.width / 2.0;
-        final double cy = hasCalibration ? request.calibration!.cameraMatrix[1][2] : request.height / 2.0;
+        if (!hasCalibration) {
+          // Uncalibrated -> distance/pose is unknown
+          return ArucoPoseResponse(detection: detection, pose: null);
+        }
+
+        // Guard: legacy calibration records may have imageWidth/imageHeight = 0.
+        // A zero stored dimension would cause divide-by-zero. Treat as needing recalibration.
+        if (request.calibration!.imageWidth == 0 || request.calibration!.imageHeight == 0) {
+          return ArucoPoseResponse(detection: detection, pose: null);
+        }
+
+        // Normalize focal length and optical center if resolution differs from calibration time.
+        // scaleX = liveWidth / calibratedWidth, scaleY = liveHeight / calibratedHeight.
+        final scaleX = request.width / request.calibration!.imageWidth;
+        final scaleY = request.height / request.calibration!.imageHeight;
+
+        final double fx = request.calibration!.cameraMatrix[0][0] * scaleX;
+        final double fy = request.calibration!.cameraMatrix[1][1] * scaleY;
+        final double cx = request.calibration!.cameraMatrix[0][2] * scaleX;
+        final double cy = request.calibration!.cameraMatrix[1][2] * scaleY;
 
         // distance_m = (real_marker_size_m × focal_length_px) / marker_pixel_width
         final distanceM = (request.markerSizeMeters * fx) / pixelWidth;

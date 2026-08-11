@@ -11,6 +11,8 @@ class HomeHudOverlay extends StatelessWidget {
   final double alignmentScore; // 0.0 – 1.0
   final String cameraStatus;
   final String robotStatus;
+  final bool isEStop;
+  final bool isConnected;
 
   const HomeHudOverlay({
     super.key,
@@ -19,6 +21,8 @@ class HomeHudOverlay extends StatelessWidget {
     required this.alignmentScore,
     required this.cameraStatus,
     required this.robotStatus,
+    this.isEStop = false,
+    this.isConnected = true,
   });
 
   @override
@@ -40,12 +44,57 @@ class HomeHudOverlay extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               _StatusPill(
                 label: 'ROBOT',
-                value: robotStatus,
-                color: AppColors.informationCyan,
+                value: isEStop ? 'E-STOP' : robotStatus,
+                color: isEStop
+                    ? AppColors.dangerRed
+                    : isConnected
+                        ? AppColors.successGreen
+                        : AppColors.warningOrange,
               ),
             ],
           ),
         ),
+
+        // Centre safety warning overlay — only shown for E-Stop or Disconnect
+        if (isEStop || !isConnected)
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xxl,
+                  vertical: AppSpacing.lg,
+                ),
+                decoration: BoxDecoration(
+                  color: (isEStop ? AppColors.dangerRed : AppColors.warningOrange)
+                      .withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isEStop ? Icons.emergency_rounded : Icons.link_off_rounded,
+                      color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                      size: 28,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      isEStop ? 'EMERGENCY STOP' : 'DISCONNECTED',
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
         // Top-right: Alignment Score
         Positioned(

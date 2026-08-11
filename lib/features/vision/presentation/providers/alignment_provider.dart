@@ -59,7 +59,9 @@ class SmoothedAlignmentNotifier extends StateNotifier<AlignmentResult> {
 
   @override
   set state(AlignmentResult newState) {
-    if (newState.status == AlignmentStatus.markerLost || newState.status == AlignmentStatus.error) {
+    if (newState.status == AlignmentStatus.markerLost || 
+        newState.status == AlignmentStatus.error ||
+        newState.status == AlignmentStatus.scanning) {
       super.state = newState;
       return;
     }

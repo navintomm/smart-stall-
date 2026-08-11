@@ -31,72 +31,91 @@ class SettingsScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: ListView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
-          children: [
-            _SettingsGroup(
-              title: 'ARM CONTROL',
-              children: [
-                _SettingsTile(
-                  icon: AppIcons.training,
-                  iconColor: const Color(0xFF6C63FF),
-                  title: 'Robotic Arm Teaching',
-                  subtitle: 'Record and teach cleaning routines',
-                  onTap: () => context.push(AppRoutes.teaching),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column
+              Expanded(
+                child: ListView(
+                  children: [
+                    _SettingsGroup(
+                      title: 'ARM CONTROL',
+                      children: [
+                        _SettingsTile(
+                          icon: AppIcons.training,
+                          iconColor: const Color(0xFF6C63FF),
+                          title: 'Robotic Arm Teaching',
+                          subtitle: 'Record and teach cleaning routines',
+                          onTap: () => context.push(AppRoutes.teaching),
+                        ),
+                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                        _SettingsTile(
+                          icon: AppIcons.robot,
+                          iconColor: AppColors.dangerRed,
+                          title: 'Manual Control',
+                          subtitle: 'Direct control without recording',
+                          badge: 'MAINTENANCE',
+                          badgeColor: AppColors.dangerRed,
+                          onTap: () => context.push(AppRoutes.manualControl),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    
+                    _SettingsGroup(
+                      title: 'ROUTINES',
+                      children: [
+                        _SettingsTile(
+                          icon: AppIcons.library,
+                          iconColor: AppColors.informationCyan,
+                          title: 'Motion Library',
+                          subtitle: 'Manage all saved cleaning routines',
+                          onTap: () => context.push(AppRoutes.motionLibrary),
+                        ),
+                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                        _SettingsTile(
+                          icon: AppIcons.defaultRoutine,
+                          iconColor: AppColors.warningOrange,
+                          title: 'Default Routine',
+                          subtitle: 'Choose routine used by Start Cleaning',
+                          onTap: () => context.push(AppRoutes.defaultRoutine),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
                 ),
-                const Divider(height: 1, indent: 64, color: AppColors.borderLight),
-                _SettingsTile(
-                  icon: AppIcons.robot,
-                  iconColor: AppColors.dangerRed,
-                  title: 'Manual Control',
-                  subtitle: 'Direct control without recording',
-                  badge: 'MAINTENANCE',
-                  badgeColor: AppColors.dangerRed,
-                  onTap: () => context.push(AppRoutes.manualControl),
+              ),
+              
+              const SizedBox(width: AppSpacing.xxl),
+              
+              // Right Column
+              Expanded(
+                child: ListView(
+                  children: [
+                    _SettingsGroup(
+                      title: 'VISION',
+                      children: [
+                        _SettingsTile(
+                          icon: Icons.camera_alt_outlined,
+                          iconColor: AppColors.primary,
+                          title: 'ArUco Camera Calibration',
+                          subtitle: 'Calibrate camera and marker distance',
+                          onTap: () => context.push(AppRoutes.cameraCalibration),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    
+                    _DeveloperModeFooter(isUnlocked: devMode),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            _SettingsGroup(
-              title: 'ROUTINES',
-              children: [
-                _SettingsTile(
-                  icon: AppIcons.library,
-                  iconColor: AppColors.informationCyan,
-                  title: 'Motion Library',
-                  subtitle: 'Manage all saved cleaning routines',
-                  onTap: () => context.push(AppRoutes.motionLibrary),
-                ),
-                const Divider(height: 1, indent: 64, color: AppColors.borderLight),
-                _SettingsTile(
-                  icon: AppIcons.defaultRoutine,
-                  iconColor: AppColors.warningOrange,
-                  title: 'Default Routine',
-                  subtitle: 'Choose routine used by Start Cleaning',
-                  onTap: () => context.push(AppRoutes.defaultRoutine),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            _SettingsGroup(
-              title: 'VISION',
-              children: [
-                _SettingsTile(
-                  icon: Icons.camera_alt_outlined,
-                  iconColor: AppColors.primary,
-                  title: 'ArUco Camera Calibration',
-                  subtitle: 'Calibrate camera and marker distance',
-                  onTap: () => context.push(AppRoutes.cameraCalibration),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            
-            _DeveloperModeFooter(isUnlocked: devMode),
-            const SizedBox(height: AppSpacing.xxl),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,351 +1,534 @@
-import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:opencv_dart/opencv_dart.dart' as cv;
-import 'package:smartstall_operator/core/theme/app_colors.dart';
-import 'package:smartstall_operator/core/constants/vision_constants.dart';
-import 'package:smartstall_operator/features/vision/domain/models/camera_calibration.dart';
-import 'package:smartstall_operator/features/vision/presentation/providers/calibration_provider.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/constants/vision_constants.dart';
+import '../../domain/models/camera_calibration.dart';
+import '../../domain/services/aruco_pose_service.dart';
+import '../providers/calibration_provider.dart';
 
+/// Landscape-optimised camera calibration page.
+///
+/// Uses the real camera + ArUco detection to perform a one-shot focal-length
+/// calibration.  The operator places the ArUco marker at a known measured
+/// distance and taps "Calibrate Now".
 class CameraCalibrationPage extends ConsumerStatefulWidget {
   const CameraCalibrationPage({super.key});
 
   @override
-  ConsumerState<CameraCalibrationPage> createState() => _CameraCalibrationPageState();
+  ConsumerState<CameraCalibrationPage> createState() =>
+      _CameraCalibrationPageState();
 }
 
-class _CameraCalibrationPageState extends ConsumerState<CameraCalibrationPage> {
+class _CameraCalibrationPageState
+    extends ConsumerState<CameraCalibrationPage> {
   CameraController? _cameraController;
   bool _isProcessing = false;
-  bool _isCalibrating = false;
-  int _framesCaptured = 0;
-  static const int _requiredFrames = 15;
 
-  // Calibration points
-  final List<cv.VecPoint3f> _objectPointsList = [];
-  final List<cv.VecPoint2f> _imagePointsList = [];
-  
-  // Base object points for one checkerboard
-  late final cv.VecPoint3f _checkerboardObjPoints;
+  // Live detection state
+  double _livePixelWidth = 0.0;
+  int? _liveMarkerId;
+  int _frameWidth = 0;
+  int _frameHeight = 0;
 
-  cv.VecPoint2f? _currentCorners;
-  Size? _imageSize;
+  // User input
+  final _distanceController = TextEditingController(text: '50');
 
-  // The background isolate calibration requires bytes instead of cv.Mat
   @override
   void initState() {
     super.initState();
-    _initializeObjectPoints();
-    _initializeCamera();
+    _initCamera();
   }
 
-  void _initializeObjectPoints() {
-    final List<cv.Point3f> points = [];
-    for (int i = 0; i < VisionConstants.checkerboardRows; i++) {
-      for (int j = 0; j < VisionConstants.checkerboardColumns; j++) {
-        points.add(cv.Point3f(
-          j * VisionConstants.checkerboardSquareSizeMeters,
-          i * VisionConstants.checkerboardSquareSizeMeters,
-          0.0,
-        ));
-      }
-    }
-    _checkerboardObjPoints = cv.VecPoint3f.fromList(points);
-  }
-
-  Future<void> _initializeCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-
-    final rearCamera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
-    );
-
-    _cameraController = CameraController(
-      rearCamera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.yuv420,
-    );
-
-    await _cameraController!.initialize();
-    
-    // Lock focus and exposure if possible
+  Future<void> _initCamera() async {
     try {
-      await _cameraController!.setFocusMode(FocusMode.auto);
-    } catch (_) {}
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
 
-    if (mounted) {
-      setState(() {});
-      _cameraController!.startImageStream(_processFrame);
+      final rear = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+
+      _cameraController = CameraController(
+        rear,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420,
+      );
+      await _cameraController!.initialize();
+
+      if (mounted) {
+        setState(() {});
+        _cameraController!.startImageStream(_processFrame);
+      }
+    } catch (e) {
+      debugPrint('Calibration camera init error: $e');
     }
   }
 
   void _processFrame(CameraImage image) async {
-    if (_isProcessing || _isCalibrating) return;
+    if (_isProcessing) return;
     _isProcessing = true;
 
     try {
-      final width = image.width;
-      final height = image.height;
-      _imageSize = Size(width.toDouble(), height.toDouble());
-
-      final lumaPlane = image.planes[0];
-      final mat = cv.Mat.fromList(height, width, cv.MatType.CV_8UC1, lumaPlane.bytes);
-
-      final (found, corners) = cv.findChessboardCorners(
-        mat, 
-        (VisionConstants.checkerboardColumns, VisionConstants.checkerboardRows)
+      final plane = image.planes[0];
+      final request = ArucoPoseRequest(
+        imageBytes: Uint8List.fromList(plane.bytes),
+        width: image.width,
+        height: image.height,
+        rowStride: plane.bytesPerRow,
+        // targetMarkerId defaults to -1 (accept any marker during calibration)
+        markerSizeMeters: VisionConstants.markerSizeMeters,
       );
 
-      mat.dispose();
+      final response =
+          await ArucoPoseService.detectAndEstimatePose(request);
 
       if (mounted) {
         setState(() {
-          _currentCorners = found ? corners : null;
+          _frameWidth = image.width;
+          _frameHeight = image.height;
+          if (response.detection != null) {
+            _liveMarkerId = response.detection!.markerId;
+            // Compute pixel width from corners
+            final c = response.detection!.corners;
+            final topEdge = _dist(c[0], c[1]);
+            final bottomEdge = _dist(c[2], c[3]);
+            _livePixelWidth = (topEdge + bottomEdge) / 2.0;
+          } else {
+            _liveMarkerId = null;
+            _livePixelWidth = 0.0;
+          }
         });
       }
-
-    } catch (e) {
-      // Ignore
+    } catch (_) {
+      // Ignore transient errors
     } finally {
       _isProcessing = false;
     }
   }
 
-  void _captureFrame() {
-    if (_currentCorners == null || _imageSize == null) return;
-    
-    // Make a copy of the corners
-    _imagePointsList.add(_currentCorners!);
-    _objectPointsList.add(_checkerboardObjPoints);
-
-    setState(() {
-      _framesCaptured++;
-    });
-
-    if (_framesCaptured >= _requiredFrames) {
-      _runCalibration();
-    }
+  double _dist(dynamic a, dynamic b) {
+    final dx = (a.x - b.x) as double;
+    final dy = (a.y - b.y) as double;
+    return (dx * dx + dy * dy).abs().toDouble();
   }
 
-  Future<void> _runCalibration() async {
-    setState(() {
-      _isCalibrating = true;
-    });
+  void _calibrateNow() {
+    if (_liveMarkerId == null || _livePixelWidth < 20) return;
 
-    // Convert List to VecVec
-    final objPointsVecVec = cv.VecVecPoint3f.fromList(
-      _objectPointsList.map((e) => e.toList()).toList()
+    final knownDistanceCm =
+        double.tryParse(_distanceController.text) ?? 50.0;
+    final knownDistanceM = knownDistanceCm / 100.0;
+
+    // focal_length_px = (pixel_width × known_distance) / marker_real_size
+    final focalLength =
+        (_livePixelWidth * knownDistanceM) / VisionConstants.markerSizeMeters;
+
+    final calib = CameraCalibration(
+      focalLengthPx: focalLength,
+      markerPixelWidth: _livePixelWidth,
+      calibrationDistanceM: knownDistanceM,
+      markerSizeM: VisionConstants.markerSizeMeters,
+      imageWidth: _frameWidth,
+      imageHeight: _frameHeight,
+      isValid: true,
+      timestamp: DateTime.now().toIso8601String(),
     );
-    
-    final imgPointsVecVec = cv.VecVecPoint2f.fromList(
-      _imagePointsList.map((e) => e.toList()).toList()
+
+    ref.read(calibrationProvider.notifier).saveCalibration(calib);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Calibration saved  ·  fx = ${focalLength.toStringAsFixed(1)} px',
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+        ),
+        backgroundColor: AppColors.successGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: const StadiumBorder(),
+      ),
     );
+  }
 
-    final cameraMatrixInit = cv.Mat.empty();
-    final distCoeffsInit = cv.Mat.empty();
-
-    try {
-      final (reprojectionError, cameraMatrix, distCoeffs, _, _) = cv.calibrateCamera(
-        objPointsVecVec,
-        imgPointsVecVec,
-        (_imageSize!.width.toInt(), _imageSize!.height.toInt()),
-        cameraMatrixInit,
-        distCoeffsInit,
-      );
-
-      // Convert camera matrix to List<List<double>>
-      final camMatList = <List<double>>[];
-      for (int r = 0; r < 3; r++) {
-        final row = <double>[];
-        for (int c = 0; c < 3; c++) {
-          row.add(cameraMatrix.at<double>(r, c));
-        }
-        camMatList.add(row);
-      }
-
-      // Convert distCoeffs to List<double>
-      final distList = <double>[];
-      for (int i = 0; i < distCoeffs.rows * distCoeffs.cols; i++) {
-        distList.add(distCoeffs.at<double>(0, i));
-      }
-
-      // Save to provider
-      final calib = CameraCalibration(
-        cameraMatrix: camMatList,
-        distCoeffs: distList,
-        reprojectionError: reprojectionError,
-        imageWidth: _imageSize!.width.toInt(),
-        imageHeight: _imageSize!.height.toInt(),
-        isValid: true,
-      );
-
-      await ref.read(calibrationProvider.notifier).saveCalibration(calib);
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text("Calibration Successful"),
-            content: Text("Reprojection Error: ${reprojectionError.toStringAsFixed(3)}\n\nCalibration saved successfully."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context); // Go back
-                },
-                child: const Text("OK"),
-              )
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Calibration failed: $e")),
-        );
-      }
-      setState(() {
-        _isCalibrating = false;
-        _framesCaptured = 0;
-        _imagePointsList.clear();
-        _objectPointsList.clear();
-      });
-    }
+  void _clearCalibration() {
+    ref.read(calibrationProvider.notifier).clearCalibration();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Calibration cleared',
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+        ),
+        backgroundColor: AppColors.warningOrange,
+        behavior: SnackBarBehavior.floating,
+        shape: const StadiumBorder(),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _cameraController?.stopImageStream();
     _cameraController?.dispose();
+    _distanceController.dispose();
     super.dispose();
   }
 
+  // ─── Build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final currentCalib = ref.watch(calibrationProvider);
+    final markerDetected = _liveMarkerId != null;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text("Camera Calibration"),
         backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Camera Calibration',
+          style:
+              AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          // Camera Preview
-          Positioned.fill(
-            child: CameraPreview(_cameraController!),
-          ),
-          
-          // Checkerboard Overlay
-          if (_currentCorners != null && _imageSize != null)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: CheckerboardPainter(
-                  corners: _currentCorners!,
-                  imageSize: _imageSize!,
-                  color: AppColors.successGreen,
+      body: SafeArea(
+        child: Row(
+          children: [
+            // ── LEFT: Camera Preview (60%) ─────────────────────────────────
+            Expanded(
+              flex: 60,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_cameraController != null &&
+                          _cameraController!.value.isInitialized)
+                        CameraPreview(_cameraController!)
+                      else
+                        Container(
+                          color: Colors.black,
+                          child: const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary)),
+                        ),
+
+                      // Live marker info overlay
+                      Positioned(
+                        bottom: AppSpacing.md,
+                        left: AppSpacing.md,
+                        right: AppSpacing.md,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: markerDetected
+                                  ? AppColors.successGreen.withOpacity(0.5)
+                                  : Colors.white24,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              _OverlayMetric(
+                                label: 'MARKER',
+                                value: markerDetected
+                                    ? '#$_liveMarkerId'
+                                    : 'Not Found',
+                                color: markerDetected
+                                    ? AppColors.successGreen
+                                    : AppColors.warningOrange,
+                              ),
+                              Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: Colors.white12),
+                              _OverlayMetric(
+                                label: 'PIXEL WIDTH',
+                                value: markerDetected
+                                    ? _livePixelWidth.toStringAsFixed(1)
+                                    : '—',
+                                color: Colors.white,
+                              ),
+                              Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: Colors.white12),
+                              _OverlayMetric(
+                                label: 'FRAME',
+                                value: '$_frameWidth x $_frameHeight',
+                                color: Colors.white54,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            
-          // Instructions & Progress
-          Positioned(
-            top: 40,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Captured: $_framesCaptured / $_requiredFrames",
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Move the 7x5 checkerboard to different angles and distances.",
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-          
-          // Capture Button
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _isCalibrating
-                  ? const CircularProgressIndicator(color: AppColors.primary)
-                  : InkWell(
-                      onTap: _currentCorners != null ? _captureFrame : null,
-                      child: Container(
-                        width: 80,
-                        height: 80,
+
+            // ── RIGHT: Controls (40%) ──────────────────────────────────────
+            Expanded(
+              flex: 40,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    0, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Current calibration status
+                      _StatusCard(calibration: currentCalib),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Known distance input
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentCorners != null ? AppColors.primary : Colors.grey,
-                          border: Border.all(color: Colors.white, width: 4),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.borderLight, width: 1.5),
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Known Distance',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _distanceController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: InputDecoration(
+                                      hintText: '50',
+                                      suffixText: 'cm',
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: AppColors.borderLight),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: AppColors.primary,
+                                            width: 2),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.lg,
+                                              vertical: AppSpacing.md),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              'Place the ArUco marker at this exact distance from the camera.',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Calibrate button
+                      ElevatedButton.icon(
+                        onPressed: markerDetected ? _calibrateNow : null,
+                        icon: Icon(
+                          Icons.check_circle_rounded,
+                          size: 20,
+                          color: markerDetected
+                              ? Colors.white
+                              : Colors.black38,
+                        ),
+                        label: Text(
+                          markerDetected
+                              ? 'Calibrate Now'
+                              : 'Point Camera at Marker',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: markerDetected
+                                ? Colors.white
+                                : Colors.black38,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: markerDetected
+                              ? AppColors.primary
+                              : AppColors.borderLight,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.lg),
+                          shape: const StadiumBorder(),
+                          elevation: 0,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // Clear button
+                      if (currentCalib.isValid)
+                        OutlinedButton.icon(
+                          onPressed: _clearCalibration,
+                          icon: const Icon(Icons.delete_outline,
+                              size: 18, color: AppColors.dangerRed),
+                          label: Text(
+                            'Clear Calibration',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.dangerRed),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                                color: AppColors.dangerRed, width: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.md),
+                            shape: const StadiumBorder(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
+class _OverlayMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _OverlayMetric(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: AppTextStyles.bodySmall
+                .copyWith(color: Colors.white38, letterSpacing: 1)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: AppTextStyles.bodyLarge
+                .copyWith(color: color, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  final CameraCalibration calibration;
+  const _StatusCard({required this.calibration});
+
+  @override
+  Widget build(BuildContext context) {
+    final valid = calibration.isValid;
+    final statusColor = valid ? AppColors.successGreen : AppColors.warningOrange;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: statusColor.withOpacity(0.4), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                valid
+                    ? Icons.check_circle_rounded
+                    : Icons.warning_amber_rounded,
+                color: statusColor,
+                size: 20,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                valid ? 'Calibrated' : 'Not Calibrated',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (valid) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _DetailRow(
+                'Focal Length', '${calibration.focalLengthPx.toStringAsFixed(1)} px'),
+            _DetailRow(
+                'Calibration Distance',
+                '${(calibration.calibrationDistanceM * 100).toStringAsFixed(0)} cm'),
+            _DetailRow('Resolution',
+                '${calibration.imageWidth}×${calibration.imageHeight}'),
+          ],
         ],
       ),
     );
   }
 }
 
-class CheckerboardPainter extends CustomPainter {
-  final cv.VecPoint2f corners;
-  final Size imageSize;
-  final Color color;
-
-  CheckerboardPainter({
-    required this.corners,
-    required this.imageSize,
-    required this.color,
-  });
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DetailRow(this.label, this.value);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final scaleX = size.width / imageSize.height; // Note: Android rear camera stream is usually 90deg rotated
-    final scaleY = size.height / imageSize.width;
-
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    for (final corner in corners) {
-      // Rotate coordinates for portrait mode (assuming phone is in portrait)
-      // Original frame is landscape (e.g., 640x480).
-      final x = corner.y * scaleX; 
-      final y = (imageSize.width - corner.x) * scaleY;
-      
-      canvas.drawCircle(Offset(x, y), 3, paint);
-    }
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary)),
+          Text(value,
+              style: AppTextStyles.bodySmall
+                  .copyWith(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CheckerboardPainter oldDelegate) => true;
 }

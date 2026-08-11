@@ -15,10 +15,24 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
   final bool isReady;
   final VoidCallback? onStart;
 
+  // Individual blocking reasons — used to show *why* Start is disabled.
+  final bool isConnected;
+  final bool isCalibrated;
+  final bool isEStop;
+  final bool markerDetected;
+  final bool alignmentReady;
+  final bool cameraAvailable;
+
   const RoutineSelectorCard({
     super.key,
     required this.isReady,
     this.onStart,
+    this.isConnected = true,
+    this.isCalibrated = true,
+    this.isEStop = false,
+    this.markerDetected = true,
+    this.alignmentReady = true,
+    this.cameraAvailable = true,
   });
 
   @override
@@ -125,6 +139,10 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
 
           const SizedBox(height: AppSpacing.lg),
 
+          // Blocking-reason strip — only visible when Start is disabled
+          if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: _selectedRoutineId != null),
+          if (!canStart) const SizedBox(height: AppSpacing.sm),
+
           // Start Button
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -150,6 +168,58 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
                 shape: const StadiumBorder(),
                 elevation: 0,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact strip showing the *first* blocking reason so the operator
+/// immediately knows what to fix before cleaning can start.
+class _BlockingReasonStrip extends StatelessWidget {
+  final RoutineSelectorCard widget;
+  final bool hasRoutine;
+
+  const _BlockingReasonStrip({required this.widget, required this.hasRoutine});
+
+  @override
+  Widget build(BuildContext context) {
+    // Priority-ordered: show the most critical blocker first.
+    final (IconData icon, String reason) = switch (true) {
+      _ when widget.isEStop         => (Icons.emergency_rounded,       'Emergency Stop is engaged'),
+      _ when !widget.isConnected    => (Icons.link_off_rounded,        'Robot is not connected'),
+      _ when !widget.cameraAvailable => (Icons.videocam_off_rounded,   'Camera unavailable'),
+      _ when !widget.isCalibrated   => (Icons.straighten_rounded,      'Camera not calibrated'),
+      _ when !widget.markerDetected => (Icons.qr_code_scanner_rounded, 'No marker detected'),
+      _ when !widget.alignmentReady => (Icons.adjust_rounded,          'Alignment not ready'),
+      _ when !hasRoutine            => (Icons.list_alt_rounded,        'No routine selected'),
+      _                             => (Icons.info_outline_rounded,    'Not ready'),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.warningOrange.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warningOrange.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.warningOrange),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              reason,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.warningOrange,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

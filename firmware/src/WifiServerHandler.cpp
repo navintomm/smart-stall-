@@ -1,5 +1,6 @@
 #include "WifiServerHandler.h"
 #include "hardware/EmergencyController.h"
+#include "SystemHealthManager.h"
 #include "Config.h"
 #include "Logger.h"
 #include "ProtocolCodec.h"
@@ -86,27 +87,52 @@ void WifiServerHandler::tick() {
                 }
             }
 
-            // Watchdog check for this specific client
-            if (millis() - _lastHeartbeatTimes[i] > 3000) {
-                Logger::warning("WiFi", "Client heartbeat timeout in slot " + String(i));
-                _clients[i].stop();
+            // Heartbeat timeout: no valid traffic from this client for 3 seconds.
+            // Unconditionally trigger emergency stop before closing the socket.
+            // The phone may have crashed, been backgrounded, or WiFi may have dropped
+            // on the phone side with the TCP half-open on the ESP32 side.
+            // Zero cooperation from Flutter is required — the ESP32 acts on its own.
+            if (!EmergencyController::isEmergency()) {
+                Logger::critical("WiFi", "Client heartbeat timeout on slot " + String(i) + " — triggering EMERGENCY STOP.");
+                EmergencyController::triggerEmergencyStop();
             }
+            _clients[i].stop();
         }
     }
-    
-    // Trigger Emergency Stop ONLY if ALL clients drop. 
-    // If Flutter crashes but Vision is alive, we might still want to stop, 
-    // but typically any connection loss is a full stop.
-    // Let's enforce that if we had clients and now have 0, we emergency stop.
+    // Secondary safety net: if every client slot is now disconnected, trigger
+    // emergency stop. This catches the race where a client drops between the
+    // per-slot heartbeat check above and the next tick.
+    bool anyStillConnected = false;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (_clients[i] && _clients[i].connected()) {
+            anyStillConnected = true;
+            break;
+        }
+    }
+    if (!anyStillConnected && anyClientActive) {
+        // We had at least one active client this tick, and now have none.
+        if (!EmergencyController::isEmergency()) {
+            Logger::critical("WiFi", "All clients disconnected — triggering EMERGENCY STOP.");
+            EmergencyController::triggerEmergencyStop();
+        }
+    }
 }
 
 void WifiServerHandler::processIncomingLine(const String& line) {
     RobotPacket packet;
     if (ProtocolCodec::decode(line.c_str(), packet)) {
+        // Pet the comms-silence watchdog ONLY on a successfully decoded packet.
+        // Malformed bytes, garbage data, or partial lines do NOT count as
+        // "Flutter is alive" — only a valid protocol frame does.
+        SystemHealthManager::petWatchdog();
+
         if (packet.type == "command") {
             CommandDispatcher::handleCommand(packet);
         }
     }
+    // If decode fails, _lastHeartbeatTimes is NOT updated either — the
+    // heartbeat timestamp is only reset on a successful newline-terminated
+    // frame (line 78), but petWatchdog only fires here on decode success.
 }
 
 void WifiServerHandler::sendData(const String& data) {

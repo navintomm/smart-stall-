@@ -12,6 +12,10 @@ import '../../settings/presentation/providers/motion_library_provider.dart';
 import '../../vision/presentation/providers/aruco_vision_provider.dart';
 import '../../vision/presentation/providers/alignment_provider.dart';
 import '../../vision/domain/models/alignment_result.dart';
+import '../../vision/presentation/providers/calibration_provider.dart';
+import '../../connection/presentation/providers/connection_provider.dart';
+import '../../manual_control/presentation/providers/manual_control_provider.dart';
+import '../../../core/constants/vision_constants.dart';
 import 'widgets/alignment_status_banner.dart';
 import 'widgets/home_hud_overlay.dart';
 import 'widgets/routine_selector_card.dart';
@@ -118,13 +122,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final visionState = ref.watch(arucoVisionProvider);
     final alignmentState = ref.watch(alignmentProvider);
+    // Explicitly check both unsafe states: no robot selected, and robot selected but not connected.
+    // Note: in Dart, null?.status == 'Connected' would evaluate to false (null == 'Connected' is false),
+    // but we make the null case explicit here to document intent, not rely on that implicit behavior.
+    final activeRobot = ref.watch(connectionProvider).activeRobot;
+    final isConnected = activeRobot != null && activeRobot.status == 'Connected';
+    final isEStop = ref.watch(manualControlProvider).emergencyStopEngaged;
+    final isCalibrated = ref.watch(calibrationProvider).isValid;
+    final libraryState = ref.watch(motionLibraryProvider);
     
-    final isReady = alignmentState.status == AlignmentStatus.ready;
-    const robotStatus = 'Standby'; // Would read from robot telemetry provider
+    // Check all required conditions for Start Cleaning
+    final cameraAvailable = _cameraController?.value.isInitialized ?? false;
+    final markerDetected = visionState.detection != null;
+    final correctMarkerId = markerDetected && visionState.detection!.markerId == VisionConstants.targetMarkerId;
+    final alignmentReady = alignmentState.status == AlignmentStatus.ready;
+    final hasValidRoutine = libraryState.defaultRoutineId != null || libraryState.routines.isNotEmpty;
+
+    final isReady = cameraAvailable &&
+                    isCalibrated &&
+                    markerDetected &&
+                    correctMarkerId &&
+                    alignmentReady &&
+                    isConnected &&
+                    !isEStop &&
+                    hasValidRoutine;
+                    
+    final robotStatus = isConnected ? 'Connected' : 'Disconnected';
 
     final detectedId = visionState.detection?.markerId;
     final alignmentScore = alignmentState.score;
-    final distanceText = alignmentState.status == AlignmentStatus.markerLost || alignmentState.status == AlignmentStatus.error 
+    
+    // Uncalibrated or missing pose should show distance as unknown
+    final bool distanceUnknown = alignmentState.status == AlignmentStatus.markerLost || 
+                                 alignmentState.status == AlignmentStatus.error ||
+                                 alignmentState.status == AlignmentStatus.scanning ||
+                                 !isCalibrated;
+                                 
+    final distanceText = distanceUnknown 
       ? '—' 
       : '${alignmentState.distanceErrorM > 0 ? '+' : ''}${alignmentState.distanceErrorM.toStringAsFixed(2)}m';
 
@@ -172,6 +206,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       alignmentScore: alignmentScore,
                       cameraStatus: visionState.status,
                       robotStatus: robotStatus,
+                      isEStop: isEStop,
+                      isConnected: isConnected,
                     ),
                   ],
                 ),
@@ -182,10 +218,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Expanded(
               flex: 35,
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     // Top Row: Branding + Settings
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -286,17 +323,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       hasMarker: detectedId != null,
                     ),
 
-                    const Spacer(),
+                    const SizedBox(height: AppSpacing.md),
                     
                     // Routine Selector & Start
                     RoutineSelectorCard(
                       isReady: isReady,
                       onStart: _onStart,
+                      isConnected: isConnected,
+                      isCalibrated: isCalibrated,
+                      isEStop: isEStop,
+                      markerDetected: markerDetected,
+                      alignmentReady: alignmentReady,
+                      cameraAvailable: cameraAvailable,
                     ),
                   ],
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),

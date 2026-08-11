@@ -9,7 +9,7 @@ final calibrationProvider =
 });
 
 class CalibrationNotifier extends StateNotifier<CameraCalibration> {
-  static const _prefsKey = 'camera_calibration_data';
+  static const _prefsKey = 'camera_calibration_v2';
 
   CalibrationNotifier() : super(CameraCalibration.empty()) {
     _loadFromPrefs();
@@ -22,7 +22,9 @@ class CalibrationNotifier extends StateNotifier<CameraCalibration> {
       try {
         state = CameraCalibration.fromJson(data);
       } catch (e) {
-        debugPrint('Failed to load calibration data: $e');
+        debugPrint('Failed to load calibration: $e');
+        // Try legacy key and clear it
+        await prefs.remove('camera_calibration_data');
       }
     }
   }
