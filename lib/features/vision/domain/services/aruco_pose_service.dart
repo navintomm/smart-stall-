@@ -13,7 +13,8 @@ class ArucoPoseRequest {
   final int rowStride;
   /// Set to -1 to accept any detected marker.
   final int targetMarkerId;
-  final double markerSizeMeters;
+  final double defaultMarkerSizeMeters;
+  final Map<int, double> knownMarkerSizes;
   final CameraCalibration? calibration;
   final cv.PredefinedDictionaryType dictType;
 
@@ -23,17 +24,23 @@ class ArucoPoseRequest {
     required this.height,
     required this.rowStride,
     this.targetMarkerId = -1, // -1 = accept any marker
-    required this.markerSizeMeters,
+    required this.defaultMarkerSizeMeters,
+    this.knownMarkerSizes = const {},
     this.calibration,
     this.dictType = cv.PredefinedDictionaryType.DICT_4X4_50,
   });
 }
 
 class ArucoPoseResponse {
-  final ArucoDetectionResult? detection;
-  final MarkerPose? pose;
+  final List<ArucoDetectionResult> allDetections;
+  final ArucoDetectionResult? activeDetection;
+  final MarkerPose? activePose;
 
-  ArucoPoseResponse({this.detection, this.pose});
+  ArucoPoseResponse({
+    required this.allDetections,
+    this.activeDetection,
+    this.activePose,
+  });
 }
 
 class ArucoPoseService {
@@ -86,90 +93,91 @@ class ArucoPoseService {
         idsList = result.$2;
 
         if (idsList.isEmpty) {
-          return ArucoPoseResponse(detection: null, pose: null);
+          return ArucoPoseResponse(allDetections: [], activeDetection: null, activePose: null);
         }
 
-        // Pick the best marker:
-        // - If targetMarkerId == -1 → pick any (choose the largest by pixel area).
-        // - Otherwise → prefer the requested ID; fall back to largest if not found.
-        int targetIndex = -1;
-        double bestPixelWidth = -1.0;
+        List<ArucoDetectionResult> allDetections = [];
+        int bestTargetIndex = -1;
+        double bestTargetScore = -1.0;
+        
+        // Strategy Priorities:
+        // 1. Explicitly requested target marker
+        // 2. Registered marker (highest priority score)
+        // 3. Largest marker
 
         for (int i = 0; i < idsList.length; i++) {
+          final id = idsList[i];
           final corners = cornersList[i];
-          final top = math.sqrt(
-            math.pow(corners[1].x - corners[0].x, 2) +
-            math.pow(corners[1].y - corners[0].y, 2),
-          );
-          final bottom = math.sqrt(
-            math.pow(corners[2].x - corners[3].x, 2) +
-            math.pow(corners[2].y - corners[3].y, 2),
-          );
+          final p0 = corners[0];
+          final p1 = corners[1];
+          final p2 = corners[2];
+          final p3 = corners[3];
+
+          final top = math.sqrt(math.pow(p1.x - p0.x, 2) + math.pow(p1.y - p0.y, 2));
+          final bottom = math.sqrt(math.pow(p2.x - p3.x, 2) + math.pow(p2.y - p3.y, 2));
+          final left = math.sqrt(math.pow(p3.x - p0.x, 2) + math.pow(p3.y - p0.y, 2));
+          final right = math.sqrt(math.pow(p2.x - p1.x, 2) + math.pow(p2.y - p1.y, 2));
+          
           final pw = (top + bottom) / 2.0;
+          final ph = (left + right) / 2.0;
+          
+          final centerX = (p0.x + p1.x + p2.x + p3.x) / 4.0;
+          final centerY = (p0.y + p1.y + p2.y + p3.y) / 4.0;
+          
+          final dy = p1.y - p0.y;
+          final dx = p1.x - p0.x;
+          final angleRad = math.atan2(dy, dx);
+          final angleDeg = angleRad * 180.0 / math.pi;
 
-          if (request.targetMarkerId != -1 && idsList[i] == request.targetMarkerId) {
-            // Exact match — always prefer this one
-            targetIndex = i;
-            bestPixelWidth = pw;
-            break;
+          // Placeholder label and size. In a real app we'd pass this via request, 
+          // but we can't easily import MarkerRegistry inside Isolate.run if it relies on Flutter logic.
+          // However, we just need basic info here, and can enrich it back on the main thread, 
+          // but let's assume we pass the physical sizes from the main thread if needed, or we calculate pose later.
+          // Actually, let's keep it simple: Isolate just returns all detections.
+          final detection = ArucoDetectionResult(
+            markerId: id,
+            corners: [
+              math.Point<double>(p0.x, p0.y),
+              math.Point<double>(p1.x, p1.y),
+              math.Point<double>(p2.x, p2.y),
+              math.Point<double>(p3.x, p3.y),
+            ],
+            center: math.Point<double>(centerX, centerY),
+            pixelWidth: pw,
+            pixelHeight: ph,
+            rotationDeg: angleDeg,
+            confidence: 1.0,
+            semanticName: 'ID $id', // We will enrich this outside the isolate
+          );
+          allDetections.add(detection);
+
+          // Selection Strategy Scoring
+          double score = 0.0;
+          if (request.targetMarkerId != -1 && id == request.targetMarkerId) {
+            score = 1000000.0 + pw; // Top priority
+          } else if (id == 1 || id == 10 || id == 20) { // Known registered markers
+            score = 500000.0 + pw;
+          } else {
+            score = pw;
           }
 
-          if (pw > bestPixelWidth) {
-            bestPixelWidth = pw;
-            targetIndex = i;
+          if (score > bestTargetScore) {
+            bestTargetScore = score;
+            bestTargetIndex = i;
           }
         }
 
-        if (targetIndex == -1) {
-          return ArucoPoseResponse(detection: null, pose: null);
+        if (bestTargetIndex == -1 || allDetections[bestTargetIndex].pixelWidth < 20.0) {
+          return ArucoPoseResponse(allDetections: allDetections, activeDetection: null, activePose: null);
         }
 
-        final detectedId = idsList[targetIndex];
-        final targetCorners = cornersList[targetIndex];
-        final p0 = targetCorners[0]; // top-left
-        final p1 = targetCorners[1]; // top-right
-        final p2 = targetCorners[2]; // bottom-right
-        final p3 = targetCorners[3]; // bottom-left
-
-        final points = [
-          math.Point<double>(p0.x, p0.y),
-          math.Point<double>(p1.x, p1.y),
-          math.Point<double>(p2.x, p2.y),
-          math.Point<double>(p3.x, p3.y),
-        ];
-
-        final detection = ArucoDetectionResult(
-          markerId: detectedId, // Report the ACTUAL detected ID
-          corners: points,
-          confidence: 1.0,
-        );
-
-        // 3. Pose Estimation using Pinhole Camera Model (from Android app)
+        final activeDetection = allDetections[bestTargetIndex];
         
-        // Calculate pixel width (average of top and bottom edges)
-        final topEdge = math.sqrt(math.pow(p1.x - p0.x, 2) + math.pow(p1.y - p0.y, 2));
-        final bottomEdge = math.sqrt(math.pow(p2.x - p3.x, 2) + math.pow(p2.y - p3.y, 2));
-        final pixelWidth = (topEdge + bottomEdge) / 2.0;
-
-        // Hard filter on marker size
-        if (pixelWidth < 20.0) {
-          return ArucoPoseResponse(detection: null, pose: null); // Too small/far
-        }
-
         final hasCalibration = request.calibration != null && request.calibration!.isValid;
-        if (!hasCalibration) {
-          // Uncalibrated -> distance/pose is unknown
-          return ArucoPoseResponse(detection: detection, pose: null);
+        if (!hasCalibration || request.calibration!.imageWidth == 0 || request.calibration!.imageHeight == 0) {
+          return ArucoPoseResponse(allDetections: allDetections, activeDetection: activeDetection, activePose: null);
         }
 
-        // Guard: legacy calibration records may have imageWidth/imageHeight = 0.
-        // A zero stored dimension would cause divide-by-zero. Treat as needing recalibration.
-        if (request.calibration!.imageWidth == 0 || request.calibration!.imageHeight == 0) {
-          return ArucoPoseResponse(detection: detection, pose: null);
-        }
-
-        // Normalize focal length and optical center if resolution differs from calibration time.
-        // scaleX = liveWidth / calibratedWidth, scaleY = liveHeight / calibratedHeight.
         final scaleX = request.width / request.calibration!.imageWidth;
         final scaleY = request.height / request.calibration!.imageHeight;
 
@@ -178,23 +186,15 @@ class ArucoPoseService {
         final double cx = request.calibration!.cameraMatrix[0][2] * scaleX;
         final double cy = request.calibration!.cameraMatrix[1][2] * scaleY;
 
-        // distance_m = (real_marker_size_m × focal_length_px) / marker_pixel_width
-        final distanceM = (request.markerSizeMeters * fx) / pixelWidth;
+        // Use physical size for this specific marker. If not configured, use default.
+        double physicalSize = request.knownMarkerSizes[activeDetection.markerId] ?? request.defaultMarkerSizeMeters;
+        if (physicalSize <= 0) physicalSize = request.defaultMarkerSizeMeters;
 
-        // Center point in pixels
-        final centerX = (p0.x + p1.x + p2.x + p3.x) / 4.0;
-        final centerY = (p0.y + p1.y + p2.y + p3.y) / 4.0;
+        final distanceM = (physicalSize * fx) / activeDetection.pixelWidth;
 
-        // Approximate X, Y in meters using pinhole projection
-        final xM = (centerX - cx) * distanceM / fx;
-        final yM = (centerY - cy) * distanceM / fy;
+        final xM = (activeDetection.center.x - cx) * distanceM / fx;
+        final yM = (activeDetection.center.y - cy) * distanceM / fy;
         final zM = distanceM;
-
-        // Rotation angle of top edge
-        final dy = p1.y - p0.y;
-        final dx = p1.x - p0.x;
-        final angleRad = math.atan2(dy, dx);
-        final angleDeg = angleRad * 180.0 / math.pi;
 
         final pose = MarkerPose(
           x: xM,
@@ -202,10 +202,14 @@ class ArucoPoseService {
           z: zM,
           roll: 0.0,
           pitch: 0.0,
-          yaw: angleDeg, // Map 2D rotation to yaw
+          yaw: activeDetection.rotationDeg,
         );
 
-        return ArucoPoseResponse(detection: detection, pose: pose);
+        return ArucoPoseResponse(
+          allDetections: allDetections, 
+          activeDetection: activeDetection, 
+          activePose: pose,
+        );
       } finally {
         grayMat?.dispose();
         detector?.dispose();

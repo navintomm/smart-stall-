@@ -7,6 +7,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: 'Inter', // Defaulting to Inter as per design system requirements
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         primary: AppColors.primary,
@@ -19,6 +20,11 @@ class AppTheme {
         bodyMedium: AppTextStyles.bodyMedium,
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
+      cardTheme: const CardTheme(
+        elevation: 0,
+        color: AppColors.cardGlass,
+        margin: EdgeInsets.zero,
+      ),
     );
   }
 }

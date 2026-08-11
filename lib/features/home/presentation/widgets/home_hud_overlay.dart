@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 /// Shows: Marker ID, Distance, Alignment Score, Camera Status, Robot Status.
 class HomeHudOverlay extends StatelessWidget {
   final int? markerId;
+  final String? semanticName;
   final String distanceText;
   final double alignmentScore; // 0.0 – 1.0
   final String cameraStatus;
@@ -17,6 +18,7 @@ class HomeHudOverlay extends StatelessWidget {
   const HomeHudOverlay({
     super.key,
     required this.markerId,
+    this.semanticName,
     required this.distanceText,
     required this.alignmentScore,
     required this.cameraStatus,
@@ -114,13 +116,13 @@ class HomeHudOverlay extends StatelessWidget {
               vertical: AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: markerId != null
-                    ? AppColors.successGreen.withOpacity(0.7)
-                    : Colors.white24,
-                width: 1.5,
+                    ? AppColors.successGreen.withOpacity(0.5)
+                    : Colors.white12,
+                width: 1,
               ),
             ),
             child: Row(
@@ -141,6 +143,12 @@ class HomeHudOverlay extends StatelessWidget {
                       style: AppTextStyles.titleLarge
                           .copyWith(color: Colors.white, fontSize: 22),
                     ),
+                    if (semanticName != null && markerId != null)
+                      Text(
+                        semanticName!,
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.primary, fontSize: 10),
+                      ),
                   ],
                 ),
 
@@ -220,9 +228,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withOpacity(0.4),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: Colors.white12, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -255,11 +263,12 @@ class _AlignmentBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isGood
-            ? AppColors.successGreen.withOpacity(0.2)
-            : Colors.black.withOpacity(0.6),
+            ? AppColors.successGreen.withOpacity(0.15)
+            : Colors.black.withOpacity(0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isGood ? AppColors.successGreen : Colors.white24,
+          color: isGood ? AppColors.successGreen.withOpacity(0.5) : Colors.white12,
+          width: 1,
         ),
       ),
       child: Row(

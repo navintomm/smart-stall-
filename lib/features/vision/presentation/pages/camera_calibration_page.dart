@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/constants/vision_constants.dart';
 import '../../domain/models/camera_calibration.dart';
 import '../../domain/services/aruco_pose_service.dart';
+import '../../domain/services/marker_registry.dart';
+import '../../../settings/presentation/providers/global_settings_provider.dart';
 import '../providers/calibration_provider.dart';
 
 /// Landscape-optimised camera calibration page.
@@ -81,8 +82,8 @@ class _CameraCalibrationPageState
         width: image.width,
         height: image.height,
         rowStride: plane.bytesPerRow,
-        // targetMarkerId defaults to -1 (accept any marker during calibration)
-        markerSizeMeters: VisionConstants.markerSizeMeters,
+        defaultMarkerSizeMeters: ref.read(globalSettingsProvider).defaultMarkerSizeMeters,
+        knownMarkerSizes: MarkerRegistry.knownMarkerSizes,
       );
 
       final response =
@@ -92,10 +93,10 @@ class _CameraCalibrationPageState
         setState(() {
           _frameWidth = image.width;
           _frameHeight = image.height;
-          if (response.detection != null) {
-            _liveMarkerId = response.detection!.markerId;
+          if (response.activeDetection != null) {
+            _liveMarkerId = response.activeDetection!.markerId;
             // Compute pixel width from corners
-            final c = response.detection!.corners;
+            final c = response.activeDetection!.corners;
             final topEdge = _dist(c[0], c[1]);
             final bottomEdge = _dist(c[2], c[3]);
             _livePixelWidth = (topEdge + bottomEdge) / 2.0;
@@ -125,15 +126,18 @@ class _CameraCalibrationPageState
         double.tryParse(_distanceController.text) ?? 50.0;
     final knownDistanceM = knownDistanceCm / 100.0;
 
+    final globalSize = ref.read(globalSettingsProvider).defaultMarkerSizeMeters;
+    final markerRealSizeM = MarkerRegistry.knownMarkerSizes[_liveMarkerId] ?? globalSize;
+
     // focal_length_px = (pixel_width × known_distance) / marker_real_size
     final focalLength =
-        (_livePixelWidth * knownDistanceM) / VisionConstants.markerSizeMeters;
+        (_livePixelWidth * knownDistanceM) / markerRealSizeM;
 
     final calib = CameraCalibration(
       focalLengthPx: focalLength,
       markerPixelWidth: _livePixelWidth,
       calibrationDistanceM: knownDistanceM,
-      markerSizeM: VisionConstants.markerSizeMeters,
+      markerSizeM: markerRealSizeM,
       imageWidth: _frameWidth,
       imageHeight: _frameHeight,
       isValid: true,

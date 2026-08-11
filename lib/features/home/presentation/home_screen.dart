@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
@@ -10,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../settings/presentation/providers/motion_library_provider.dart';
 import '../../vision/presentation/providers/aruco_vision_provider.dart';
+import '../../vision/domain/models/aruco_detection_result.dart';
 import '../../vision/presentation/providers/alignment_provider.dart';
 import '../../vision/domain/models/alignment_result.dart';
 import '../../vision/presentation/providers/calibration_provider.dart';
@@ -19,6 +19,8 @@ import '../../../core/constants/vision_constants.dart';
 import 'widgets/alignment_status_banner.dart';
 import 'widgets/home_hud_overlay.dart';
 import 'widgets/routine_selector_card.dart';
+import '../../../shared/widgets/cards/surface_card.dart';
+import '../../../shared/widgets/buttons/primary_action_button.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -162,16 +164,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ? '—' 
       : '${alignmentState.distanceErrorM > 0 ? '+' : ''}${alignmentState.distanceErrorM.toStringAsFixed(2)}m';
 
-    final markerCorners = visionState.detection?.corners ?? [];
+    final allDetections = visionState.allDetections;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: Row(
           children: [
-            // ── LEFT PANEL: Camera (65%) ────────────────────────────────────
+            // ── LEFT PANEL: Camera (flex: 7) ────────────────────────────────────
             Expanded(
-              flex: 65,
+              flex: 7,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(32),
@@ -187,13 +189,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     else
                       _CameraLoadingView(status: visionState.status),
 
-                    // Bounding box painter
-                    if (markerCorners.length == 4)
+                    // Bounding box painter for ALL markers
+                    if (allDetections.isNotEmpty)
                       CustomPaint(
                         painter: _MarkerPainter(
-                          corners: markerCorners,
+                          detections: allDetections,
+                          activeMarkerId: detectedId,
+                          activePoseDistance: distanceUnknown ? null : alignmentState.distanceErrorM,
+                          activeAlignmentScore: alignmentScore,
                           imageSize: Size(
-                            _cameraController!.value.previewSize!.height, // Note: Android native rotation might flip width/height
+                            _cameraController!.value.previewSize!.height, // Assuming rotated sensor (width/height flipped)
                             _cameraController!.value.previewSize!.width,
                           ),
                         ),
@@ -202,9 +207,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // HUD overlay
                     HomeHudOverlay(
                       markerId: detectedId,
+                      semanticName: visionState.detection?.semanticName,
                       distanceText: distanceText,
                       alignmentScore: alignmentScore,
-                      cameraStatus: visionState.status,
+                      cameraStatus: isCalibrated ? visionState.status : 'Calibration Required',
                       robotStatus: robotStatus,
                       isEStop: isEStop,
                       isConnected: isConnected,
@@ -214,15 +220,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── RIGHT PANEL: Action & Status (35%) ─────────────────────────
+            // ── RIGHT PANEL: Action & Status (flex: 4) ─────────────────────────
             Expanded(
-              flex: 35,
+              flex: 4,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     // Top Row: Branding + Settings
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,93 +259,96 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                               side: const BorderSide(color: AppColors.borderLight, width: 1.5),
                             ),
-                            elevation: 2,
-                            shadowColor: Colors.black.withOpacity(0.1),
+                            elevation: 0,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     
-                    // Compact Status Card
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.borderLight, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Alignment', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                              Text(
-                                '${(alignmentScore * 100).toStringAsFixed(0)}%', 
-                                style: AppTextStyles.titleLarge.copyWith(
-                                  color: alignmentScore >= 0.95 ? AppColors.successGreen : AppColors.warningOrange, 
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 20,
+                    // Metric Cards Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SurfaceCard(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Alignment', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${(alignmentScore * 100).toStringAsFixed(0)}%', 
+                                  style: AppTextStyles.titleLarge.copyWith(
+                                    color: alignmentScore >= 0.95 ? AppColors.successGreen : AppColors.text, 
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 24,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.0),
-                            child: Divider(height: 1, color: AppColors.borderLight),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Distance', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                              Text(
-                                distanceText, 
-                                style: AppTextStyles.titleLarge.copyWith(
-                                  color: AppColors.text, 
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 20,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: SurfaceCard(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Distance', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  distanceText, 
+                                  style: AppTextStyles.titleLarge.copyWith(
+                                    color: AppColors.text, 
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 24,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     
-                    const SizedBox(height: AppSpacing.xl),
-                    
-                    // Alignment Banner
-                    AlignmentStatusBanner(
-                      alignmentScore: alignmentScore,
-                      hasMarker: detectedId != null,
-                    ),
-
                     const SizedBox(height: AppSpacing.md),
                     
-                    // Routine Selector & Start
-                    RoutineSelectorCard(
-                      isReady: isReady,
-                      onStart: _onStart,
-                      isConnected: isConnected,
-                      isCalibrated: isCalibrated,
-                      isEStop: isEStop,
-                      markerDetected: markerDetected,
-                      alignmentReady: alignmentReady,
-                      cameraAvailable: cameraAvailable,
+                    // Routine Selector & Alignment Banner wrapper
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AlignmentStatusBanner(
+                            alignmentScore: alignmentScore,
+                            hasMarker: detectedId != null,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          RoutineSelectorCard(
+                            isReady: isReady,
+                            onStart: _onStart,
+                            isConnected: isConnected,
+                            isCalibrated: isCalibrated,
+                            isEStop: isEStop,
+                            markerDetected: markerDetected,
+                            alignmentReady: alignmentReady,
+                            cameraAvailable: cameraAvailable,
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Primary Action Button anchored at bottom
+                    PrimaryActionButton(
+                      label: isReady ? 'START CLEANING' : 'NOT READY',
+                      icon: isReady ? AppIcons.play : Icons.block,
+                      onPressed: isReady ? _onStart : null,
                     ),
                   ],
                 ),
               ),
             ),
-          ),
           ],
         ),
       ),
@@ -378,35 +386,75 @@ class _CameraLoadingView extends StatelessWidget {
 
 // ─── Marker Bounding Box Painter ─────────────────────────────────────────────
 class _MarkerPainter extends CustomPainter {
-  final List<math.Point<double>> corners;
+  final List<ArucoDetectionResult> detections;
+  final int? activeMarkerId;
+  final double? activePoseDistance;
+  final double activeAlignmentScore;
   final Size imageSize;
 
-  _MarkerPainter({required this.corners, required this.imageSize});
+  _MarkerPainter({
+    required this.detections,
+    required this.activeMarkerId,
+    required this.activePoseDistance,
+    required this.activeAlignmentScore,
+    required this.imageSize,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (corners.length != 4) return;
-    final paint = Paint()
-      ..color = AppColors.successGreen
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    final scaleX = size.width / imageSize.width;
-    final scaleY = size.height / imageSize.height;
-    final path = Path()
-      ..moveTo(corners[0].x * scaleX, corners[0].y * scaleY)
-      ..lineTo(corners[1].x * scaleX, corners[1].y * scaleY)
-      ..lineTo(corners[2].x * scaleX, corners[2].y * scaleY)
-      ..lineTo(corners[3].x * scaleX, corners[3].y * scaleY)
-      ..close();
-    canvas.drawPath(path, paint);
+    if (detections.isEmpty) return;
+    
+    // Using the transposition mapping (y -> x, width - x -> y) which is common for portrait-native sensors in landscape mode.
+    final scaleX = size.width / imageSize.height;
+    final scaleY = size.height / imageSize.width;
 
-    // Corner dots
-    final dotPaint = Paint()
-      ..color = AppColors.successGreen
-      ..style = PaintingStyle.fill;
-    for (final c in corners) {
-      canvas.drawCircle(
-          Offset(c.x * scaleX, c.y * scaleY), 5, dotPaint);
+    for (final detection in detections) {
+      if (!detection.isValid) continue;
+      
+      final isActive = detection.markerId == activeMarkerId;
+      final color = isActive ? AppColors.successGreen : Colors.orangeAccent;
+
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isActive ? 4.0 : 2.0;
+
+      final corners = detection.corners;
+      final path = Path()
+        ..moveTo(corners[0].y * scaleX, (imageSize.width - corners[0].x) * scaleY)
+        ..lineTo(corners[1].y * scaleX, (imageSize.width - corners[1].x) * scaleY)
+        ..lineTo(corners[2].y * scaleX, (imageSize.width - corners[2].x) * scaleY)
+        ..lineTo(corners[3].y * scaleX, (imageSize.width - corners[3].x) * scaleY)
+        ..close();
+      canvas.drawPath(path, paint);
+
+      // Center dot
+      final centerPaint = Paint()
+        ..color = Colors.redAccent
+        ..style = PaintingStyle.fill;
+      final cx = detection.center.y * scaleX;
+      final cy = (imageSize.width - detection.center.x) * scaleY;
+      canvas.drawCircle(Offset(cx, cy), isActive ? 6.0 : 4.0, centerPaint);
+
+      // Label background
+      final bgPaint = Paint()..color = Colors.black87;
+      canvas.drawRect(Rect.fromLTWH(cx + 10, cy - 10, 150, isActive ? 50 : 25), bgPaint);
+
+      // Text painter
+      const textStyle = TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold);
+      final span1 = TextSpan(text: 'ID: ${detection.markerId} (${detection.semanticName})', style: textStyle);
+      final tp1 = TextPainter(text: span1, textDirection: TextDirection.ltr);
+      tp1.layout();
+      tp1.paint(canvas, Offset(cx + 14, cy - 6));
+
+      if (isActive) {
+        final distText = activePoseDistance != null ? '${(activePoseDistance!).toStringAsFixed(2)}m' : '—';
+        final scoreText = '${(activeAlignmentScore * 100).toStringAsFixed(0)}%';
+        final span2 = TextSpan(text: 'Dist: $distText | Align: $scoreText', style: textStyle.copyWith(color: AppColors.primary));
+        final tp2 = TextPainter(text: span2, textDirection: TextDirection.ltr);
+        tp2.layout();
+        tp2.paint(canvas, Offset(cx + 14, cy + 8));
+      }
     }
   }
 

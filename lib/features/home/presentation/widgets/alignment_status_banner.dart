@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../vision/domain/services/auto_alignment_service.dart';
+import '../../../vision/presentation/providers/calibration_provider.dart';
 
 /// Animated status banner + Auto-Align toggle that watches the real
 /// [AutoAlignmentNotifier] state machine.
@@ -20,10 +21,12 @@ class AlignmentStatusBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final autoState = ref.watch(autoAlignmentServiceProvider);
-    final isAutoActive = autoState.status == AutoAlignState.aligning;
+    final isAutoActive = autoState.isAutoAlignActive;
     final isAligned = autoState.status == AutoAlignState.aligned;
     final isVisuallyReady =
         isAligned || (hasMarker && alignmentScore >= 0.95);
+
+    final isCalibrated = ref.watch(calibrationProvider).isValid;
 
     // Determine banner content based on auto-alignment state
     String bannerLabel;
@@ -31,7 +34,12 @@ class AlignmentStatusBanner extends ConsumerWidget {
     IconData bannerIcon;
     bool animate;
 
-    if (isAligned) {
+    if (!isCalibrated) {
+      bannerLabel = 'Camera Not Calibrated';
+      bannerColor = AppColors.warningOrange;
+      bannerIcon = Icons.straighten_rounded;
+      animate = true;
+    } else if (isAligned) {
       bannerLabel = 'Aligned ✓';
       bannerColor = AppColors.successGreen;
       bannerIcon = Icons.check_circle_rounded;

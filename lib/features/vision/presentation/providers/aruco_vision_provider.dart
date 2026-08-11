@@ -1,14 +1,16 @@
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/vision_constants.dart';
 import '../../domain/models/aruco_detection_result.dart';
 import '../../domain/models/marker_pose.dart';
 import '../../domain/services/aruco_pose_service.dart';
 import 'calibration_provider.dart';
+import '../../domain/services/marker_registry.dart';
+import '../../../settings/presentation/providers/global_settings_provider.dart';
 
 class ArucoVisionState {
-  final ArucoDetectionResult? detection;
-  final MarkerPose? pose;
+  final List<ArucoDetectionResult> allDetections;
+  final ArucoDetectionResult? detection; // Active tracking target
+  final MarkerPose? pose; // Active target pose
   final double fps;
   final bool isProcessing;
   final String status;
@@ -19,8 +21,10 @@ class ArucoVisionState {
   final int rowStride;
   final String debugIds;
   final String debugError;
+  final DateTime timestamp;
 
   ArucoVisionState({
+    this.allDetections = const [],
     this.detection,
     this.pose,
     this.fps = 0.0,
@@ -31,9 +35,11 @@ class ArucoVisionState {
     this.rowStride = 0,
     this.debugIds = '[]',
     this.debugError = '',
-  });
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 
   ArucoVisionState copyWith({
+    List<ArucoDetectionResult>? allDetections,
     ArucoDetectionResult? detection,
     MarkerPose? pose,
     double? fps,
@@ -47,6 +53,7 @@ class ArucoVisionState {
     bool clearDetection = false,
   }) {
     return ArucoVisionState(
+      allDetections: clearDetection ? [] : (allDetections ?? this.allDetections),
       detection: clearDetection ? null : (detection ?? this.detection),
       pose: clearDetection ? null : (pose ?? this.pose),
       fps: fps ?? this.fps,
@@ -98,6 +105,7 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
     }
 
     final calibration = _ref.read(calibrationProvider);
+    final globalSettings = _ref.read(globalSettingsProvider);
 
     final request = ArucoPoseRequest(
       imageBytes: yPlaneBytes,
@@ -105,7 +113,8 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
       height: height,
       rowStride: rowStride,
       // targetMarkerId defaults to -1 (accept any marker)
-      markerSizeMeters: VisionConstants.markerSizeMeters,
+      defaultMarkerSizeMeters: globalSettings.defaultMarkerSizeMeters,
+      knownMarkerSizes: MarkerRegistry.knownMarkerSizes,
       calibration: calibration,
     );
 
@@ -113,16 +122,51 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
       final response = await ArucoPoseService.detectAndEstimatePose(request);
       
       if (mounted) {
+        // Enrich semantic names on the main thread
+        final enrichedDetections = response.allDetections.map((d) {
+          final config = MarkerRegistry.getConfig(d.markerId);
+          return ArucoDetectionResult(
+            markerId: d.markerId,
+            corners: d.corners,
+            center: d.center,
+            pixelWidth: d.pixelWidth,
+            pixelHeight: d.pixelHeight,
+            rotationDeg: d.rotationDeg,
+            confidence: d.confidence,
+            semanticName: config.label,
+            timestamp: d.timestamp,
+          );
+        }).toList();
+
+        ArucoDetectionResult? enrichedActive;
+        if (response.activeDetection != null) {
+          final config = MarkerRegistry.getConfig(response.activeDetection!.markerId);
+          enrichedActive = ArucoDetectionResult(
+            markerId: response.activeDetection!.markerId,
+            corners: response.activeDetection!.corners,
+            center: response.activeDetection!.center,
+            pixelWidth: response.activeDetection!.pixelWidth,
+            pixelHeight: response.activeDetection!.pixelHeight,
+            rotationDeg: response.activeDetection!.rotationDeg,
+            confidence: response.activeDetection!.confidence,
+            semanticName: config.label,
+            timestamp: response.activeDetection!.timestamp,
+          );
+        }
+
         state = state.copyWith(
-          detection: response.detection,
-          pose: response.pose,
+          allDetections: enrichedDetections,
+          detection: enrichedActive,
+          pose: response.activePose,
           fps: _currentFps,
           isProcessing: false,
-          clearDetection: response.detection == null,
+          clearDetection: response.activeDetection == null,
           frameWidth: width,
           frameHeight: height,
           rowStride: rowStride,
-          debugIds: response.detection != null ? '[${response.detection!.markerId}]' : '[]',
+          debugIds: enrichedDetections.isEmpty 
+              ? '[]' 
+              : '[${enrichedDetections.map((d) => d.markerId).join(', ')}]',
           debugError: '',
         );
       }

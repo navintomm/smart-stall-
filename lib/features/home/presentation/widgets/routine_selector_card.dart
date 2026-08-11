@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
-import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
-import '../../../../shared/widgets/foundation/glass_card.dart';
+import '../../../../shared/widgets/cards/surface_card.dart';
 import '../../../settings/presentation/providers/motion_library_provider.dart';
 
 /// Card displayed at the bottom of the Home screen.
@@ -58,7 +57,7 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
 
     final canStart = widget.isReady && _selectedRoutineId != null;
 
-    return GlassCard(
+    return SurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -143,33 +142,6 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
           if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: _selectedRoutineId != null),
           if (!canStart) const SizedBox(height: AppSpacing.sm),
 
-          // Start Button
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              boxShadow: canStart ? AppShadows.glowingGreen : [],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: canStart ? widget.onStart : null,
-              icon: Icon(AppIcons.play,
-                  size: 22, color: canStart ? Colors.black : Colors.black38),
-              label: Text(
-                'Start Cleaning',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: canStart ? Colors.black : Colors.black38,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    canStart ? AppColors.primary : AppColors.borderLight,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                shape: const StadiumBorder(),
-                elevation: 0,
-              ),
-            ),
-          ),
         ],
       ),
     );

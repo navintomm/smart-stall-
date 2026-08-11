@@ -7,6 +7,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/providers/developer_mode_provider.dart';
+import 'providers/global_settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -105,6 +106,17 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle: 'Calibrate camera and marker distance',
                           onTap: () => context.push(AppRoutes.cameraCalibration),
                         ),
+                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                        Consumer(builder: (context, ref, child) {
+                          final globalSettings = ref.watch(globalSettingsProvider);
+                          return _SettingsTile(
+                            icon: Icons.straighten_rounded,
+                            iconColor: AppColors.informationCyan,
+                            title: 'Global Marker Size',
+                            subtitle: '${(globalSettings.defaultMarkerSizeMeters * 1000).toStringAsFixed(0)} mm',
+                            onTap: () => _showMarkerSizeDialog(context, ref),
+                          );
+                        }),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xxl),
@@ -117,6 +129,49 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+  void _showMarkerSizeDialog(BuildContext context, WidgetRef ref) {
+    final currentSize = ref.read(globalSettingsProvider).defaultMarkerSizeMeters * 1000.0;
+    final controller = TextEditingController(text: currentSize.toStringAsFixed(0));
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Global Marker Size'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter the physical size (width) of the ArUco marker in millimetres.'),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                suffixText: 'mm',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = double.tryParse(controller.text);
+              if (val != null && val > 0) {
+                ref.read(globalSettingsProvider.notifier).setDefaultMarkerSize(val / 1000.0);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

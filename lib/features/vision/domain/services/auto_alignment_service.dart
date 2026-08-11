@@ -12,7 +12,11 @@ import '../../../manual_control/presentation/providers/manual_control_provider.d
 
 enum AutoAlignState {
   idle,
-  aligning,
+  searching,
+  tracking,
+  aligningDistance,
+  aligningHorizontal,
+  aligningRotation,
   aligned,
   markerLost,
   error,
@@ -29,6 +33,13 @@ class AutoAlignmentState {
     this.lastCommand = '',
     this.stableFrameCount = 0,
   });
+
+  bool get isAutoAlignActive => 
+      status == AutoAlignState.searching || 
+      status == AutoAlignState.tracking ||
+      status == AutoAlignState.aligningDistance ||
+      status == AutoAlignState.aligningHorizontal ||
+      status == AutoAlignState.aligningRotation;
 
   AutoAlignmentState copyWith({
     AutoAlignState? status,
@@ -104,7 +115,7 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
     if (isConnected != null) _isConnected = isConnected;
 
     if (_isEmergencyStop || !_isConnected) {
-      if (state.status == AutoAlignState.aligning) {
+      if (state.isAutoAlignActive) {
         _sendCommand(CommandCatalog.stop.name, {});
         state = state.copyWith(
           status: AutoAlignState.error,
@@ -117,9 +128,9 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
   // ── Public API ──────────────────────────────────────────────────────────
 
   void startAutoAlignment() {
-    if (state.status == AutoAlignState.aligning) return;
+    if (state.isAutoAlignActive) return;
     state = state.copyWith(
-      status: AutoAlignState.aligning,
+      status: AutoAlignState.searching,
       stableFrameCount: 0,
       lastCommand: '',
     );
@@ -138,7 +149,7 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
   // ── Core Alignment Loop ─────────────────────────────────────────────────
 
   void processAlignment(AlignmentResult alignment) {
-    if (state.status != AutoAlignState.aligning) return;
+    if (!state.isAutoAlignActive) return;
 
     // Reset safety timer on every valid frame
     _resetSafetyTimer();
@@ -159,9 +170,9 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
         alignment.status == AlignmentStatus.scanning) {
       _sendCommand(CommandCatalog.stop.name, {});
       state = state.copyWith(
-        status: alignment.status == AlignmentStatus.scanning ? AutoAlignState.error : AutoAlignState.markerLost,
+        status: alignment.status == AlignmentStatus.scanning ? AutoAlignState.searching : AutoAlignState.markerLost,
         stableFrameCount: 0,
-        lastCommand: alignment.status == AlignmentStatus.scanning ? 'STOP (Uncalibrated/No Pose)' : 'STOP (marker lost)',
+        lastCommand: alignment.status == AlignmentStatus.scanning ? 'STOP (Scanning)' : 'STOP (Marker Lost)',
       );
       return;
     }
@@ -192,7 +203,10 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
         _safetyTimer?.cancel();
         return;
       }
-      state = state.copyWith(stableFrameCount: newCount);
+      state = state.copyWith(
+        stableFrameCount: newCount,
+        status: AutoAlignState.tracking,
+      );
       return;
     }
 
@@ -207,19 +221,31 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
       final speed = (horizErr.abs() * 80).clamp(12, 40).toInt();
       if (horizErr > 0) {
         _sendCommand(CommandCatalog.turnRight.name, {'speed': speed});
-        state = state.copyWith(lastCommand: 'TURN_RIGHT ($speed)');
+        state = state.copyWith(
+          lastCommand: 'TURN_RIGHT ($speed)',
+          status: AutoAlignState.aligningHorizontal,
+        );
       } else {
         _sendCommand(CommandCatalog.turnLeft.name, {'speed': speed});
-        state = state.copyWith(lastCommand: 'TURN_LEFT ($speed)');
+        state = state.copyWith(
+          lastCommand: 'TURN_LEFT ($speed)',
+          status: AutoAlignState.aligningHorizontal,
+        );
       }
     } else if (!distanceInBand) {
       final speed = (distErr.abs() * 60).clamp(12, 45).toInt();
       if (distErr > 0) {
         _sendCommand(CommandCatalog.moveForward.name, {'speed': speed});
-        state = state.copyWith(lastCommand: 'FORWARD ($speed)');
+        state = state.copyWith(
+          lastCommand: 'FORWARD ($speed)',
+          status: AutoAlignState.aligningDistance,
+        );
       } else {
         _sendCommand(CommandCatalog.moveBackward.name, {'speed': speed});
-        state = state.copyWith(lastCommand: 'BACKWARD ($speed)');
+        state = state.copyWith(
+          lastCommand: 'BACKWARD ($speed)',
+          status: AutoAlignState.aligningDistance,
+        );
       }
     }
   }
@@ -237,7 +263,7 @@ class AutoAlignmentNotifier extends StateNotifier<AutoAlignmentState> {
       const Duration(milliseconds: _safetyTimeoutMs),
       () {
         // No vision update received — emergency stop
-        if (state.status == AutoAlignState.aligning) {
+        if (state.isAutoAlignActive) {
           _sendCommand(CommandCatalog.stop.name, {});
           state = state.copyWith(
             status: AutoAlignState.error,
