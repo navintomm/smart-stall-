@@ -33,99 +33,102 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Left Column
+              // ── Row 1: ARM CONTROL + ROUTINES + VISION ──────────────────
               Expanded(
-                child: ListView(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _SettingsGroup(
-                      title: 'ARM CONTROL',
-                      children: [
-                        _SettingsTile(
-                          icon: AppIcons.training,
-                          iconColor: const Color(0xFF6C63FF),
-                          title: 'Robotic Arm Teaching',
-                          subtitle: 'Record and teach cleaning routines',
-                          onTap: () => context.push(AppRoutes.teaching),
-                        ),
-                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
-                        _SettingsTile(
-                          icon: AppIcons.robot,
-                          iconColor: AppColors.dangerRed,
-                          title: 'Manual Control',
-                          subtitle: 'Direct control without recording',
-                          badge: 'MAINTENANCE',
-                          badgeColor: AppColors.dangerRed,
-                          onTap: () => context.push(AppRoutes.manualControl),
-                        ),
-                      ],
+                    // ARM CONTROL
+                    Expanded(
+                      child: _SettingsGroup(
+                        title: 'ARM CONTROL',
+                        children: [
+                          _SettingsTile(
+                            icon: AppIcons.training,
+                            iconColor: const Color(0xFF6C63FF),
+                            title: 'Teaching',
+                            subtitle: 'Record cleaning routines',
+                            onTap: () => context.push(AppRoutes.teaching),
+                          ),
+                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          _SettingsTile(
+                            icon: AppIcons.robot,
+                            iconColor: AppColors.dangerRed,
+                            title: 'Manual Control',
+                            subtitle: 'Direct control',
+                            badge: 'MAINTENANCE',
+                            badgeColor: AppColors.dangerRed,
+                            onTap: () => context.push(AppRoutes.manualControl),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    
-                    _SettingsGroup(
-                      title: 'ROUTINES',
-                      children: [
-                        _SettingsTile(
-                          icon: AppIcons.library,
-                          iconColor: AppColors.informationCyan,
-                          title: 'Motion Library',
-                          subtitle: 'Manage all saved cleaning routines',
-                          onTap: () => context.push(AppRoutes.motionLibrary),
-                        ),
-                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
-                        _SettingsTile(
-                          icon: AppIcons.defaultRoutine,
-                          iconColor: AppColors.warningOrange,
-                          title: 'Default Routine',
-                          subtitle: 'Choose routine used by Start Cleaning',
-                          onTap: () => context.push(AppRoutes.defaultRoutine),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(width: AppSpacing.xxl),
-              
-              // Right Column
-              Expanded(
-                child: ListView(
-                  children: [
-                    _SettingsGroup(
-                      title: 'VISION',
-                      children: [
-                        _SettingsTile(
-                          icon: Icons.camera_alt_outlined,
-                          iconColor: AppColors.primary,
-                          title: 'ArUco Camera Calibration',
-                          subtitle: 'Calibrate camera and marker distance',
-                          onTap: () => context.push(AppRoutes.cameraCalibration),
-                        ),
-                        const Divider(height: 1, indent: 64, color: AppColors.borderLight),
-                        Consumer(builder: (context, ref, child) {
-                          final globalSettings = ref.watch(globalSettingsProvider);
-                          return _SettingsTile(
-                            icon: Icons.straighten_rounded,
+                    const SizedBox(width: AppSpacing.xl),
+
+                    // ROUTINES
+                    Expanded(
+                      child: _SettingsGroup(
+                        title: 'ROUTINES',
+                        children: [
+                          _SettingsTile(
+                            icon: AppIcons.library,
                             iconColor: AppColors.informationCyan,
-                            title: 'Global Marker Size',
-                            subtitle: '${(globalSettings.defaultMarkerSizeMeters * 1000).toStringAsFixed(0)} mm',
-                            onTap: () => _showMarkerSizeDialog(context, ref),
-                          );
-                        }),
-                      ],
+                            title: 'Motion Library',
+                            subtitle: 'Manage saved routines',
+                            onTap: () => context.push(AppRoutes.motionLibrary),
+                          ),
+                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          _SettingsTile(
+                            icon: AppIcons.defaultRoutine,
+                            iconColor: AppColors.warningOrange,
+                            title: 'Default Routine',
+                            subtitle: 'Used by Start Cleaning',
+                            onTap: () => context.push(AppRoutes.defaultRoutine),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
-                    
-                    _DeveloperModeFooter(isUnlocked: devMode),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(width: AppSpacing.xl),
+
+                    // VISION
+                    Expanded(
+                      child: _SettingsGroup(
+                        title: 'VISION',
+                        children: [
+                          _SettingsTile(
+                            icon: Icons.camera_alt_outlined,
+                            iconColor: AppColors.primary,
+                            title: 'ArUco Calibration',
+                            subtitle: 'Calibrate camera & distance',
+                            onTap: () => context.push(AppRoutes.cameraCalibration),
+                          ),
+                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          Consumer(builder: (context, ref, child) {
+                            final globalSettings = ref.watch(globalSettingsProvider);
+                            return _SettingsTile(
+                              icon: Icons.straighten_rounded,
+                              iconColor: AppColors.informationCyan,
+                              title: 'Marker Size',
+                              subtitle: '${(globalSettings.defaultMarkerSizeMeters * 1000).toStringAsFixed(0)} mm',
+                              onTap: () => _showMarkerSizeDialog(context, ref),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Footer: Version + Dev Mode ───────────────────────────────
+              _DeveloperModeFooter(isUnlocked: devMode),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),

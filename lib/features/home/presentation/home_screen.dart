@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/providers/di_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -17,15 +16,8 @@ import '../../vision/presentation/providers/calibration_provider.dart';
 import '../../connection/presentation/providers/connection_provider.dart';
 import '../../manual_control/presentation/providers/manual_control_provider.dart';
 import '../../../core/constants/vision_constants.dart';
-import 'widgets/alignment_status_banner.dart';
 import 'widgets/home_hud_overlay.dart';
-import 'widgets/routine_selector_card.dart';
-import '../../../shared/widgets/cards/surface_card.dart';
-import '../../../shared/widgets/buttons/primary_action_button.dart';
-import '../../vision/domain/services/dirt_detection_service.dart';
-import '../../auto_cleaning/domain/services/cleaning_decision_service.dart';
-import '../../auto_cleaning/domain/models/cleaning_profile.dart';
-import '../../auto_cleaning/presentation/widgets/cleaning_decision_summary_widget.dart';
+import 'widgets/cleaning_control_panel.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -37,10 +29,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─── Camera & Vision ─────────────────────────────────────────────────────
   CameraController? _cameraController;
-  
-  // ─── AI State ────────────────────────────────────────────────────────────
-  bool _isAnalyzing = false;
-  CleaningProfile? _recommendedProfile;
 
   @override
   void initState() {
@@ -89,122 +77,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       height: image.height,
       rowStride: plane.bytesPerRow,
     );
-
-    // AI Analysis Pipeline
-    if (_isAnalyzing) {
-      _isAnalyzing = false; // only trigger once per analysis request
-      _runAiAnalysis(image);
-    }
   }
 
-  Future<void> _runAiAnalysis(CameraImage image) async {
-    final aiService = ref.read(dirtDetectionServiceProvider);
-    final result = await aiService.processFrame(image);
-    
-    // Dismiss the loading dialog
-    if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
 
-    if (result != null && mounted) {
-      final decisionService = ref.read(cleaningDecisionServiceProvider);
-      final profile = decisionService.generateRecommendation(result);
-      
-      setState(() {
-        _recommendedProfile = profile;
-      });
 
-      // Show summary dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: CleaningDecisionSummaryWidget(
-            result: result,
-            profile: profile,
-            onConfirm: () {
-              Navigator.of(context).pop();
-              _confirmAndStartCleaning();
-            },
-            onCancel: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _recommendedProfile = null;
-              });
-            },
-          ),
-        ),
-      );
-    } else if (mounted) {
-      setState(() {
-        _isAnalyzing = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AI Analysis failed or was busy.')),
-      );
-    }
-  }
 
-  void _startAiAnalysis() {
-    setState(() {
-      _isAnalyzing = true;
-      _recommendedProfile = null;
-    });
-
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Analyzing dirt level...'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Called after setState is done in _runAiAnalysis
-  @override
-  void didUpdateWidget(HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Not the best place, we can handle dialog dismissal in _runAiAnalysis
-  }
-
-  Future<void> _confirmAndStartCleaning() async {
-    if (_recommendedProfile == null) return;
-    
-    final repo = ref.read(robotRepositoryProvider);
-    await repo.startCleaningWithProfile(_recommendedProfile!);
-
-    setState(() {
-      _recommendedProfile = null;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(children: [
-            const Icon(AppIcons.play, color: Colors.white, size: 18),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Cleaning started (AI Profile)',
-              style: AppTextStyles.bodyLarge.copyWith(color: Colors.white),
-            ),
-          ]),
-          backgroundColor: AppColors.successGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: const StadiumBorder(),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
 
   @override
   void dispose() {
@@ -266,9 +143,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Row(
           children: [
-            // ── LEFT PANEL: Camera (flex: 7) ────────────────────────────────────
+            // ── LEFT PANEL: Camera (flex: 3) ────────────────────────────────────
             Expanded(
-              flex: 7,
+              flex: 3,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(32),
@@ -347,9 +224,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── RIGHT PANEL: Action & Status (flex: 4) ─────────────────────────
+            // ── RIGHT PANEL: Action & Status (flex: 1) ─────────────────────────
             Expanded(
-              flex: 4,
+              flex: 1,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
@@ -391,86 +268,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    
-                    // Metric Cards Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SurfaceCard(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Alignment', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${(alignmentScore * 100).toStringAsFixed(0)}%', 
-                                  style: AppTextStyles.titleLarge.copyWith(
-                                    color: alignmentScore >= 0.95 ? AppColors.successGreen : AppColors.text, 
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: SurfaceCard(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Distance', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  distanceText, 
-                                  style: AppTextStyles.titleLarge.copyWith(
-                                    color: AppColors.text, 
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                     
                     const SizedBox(height: AppSpacing.md),
                     
-                    // Routine Selector & Alignment Banner wrapper
+                    // Control Panel
                     Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AlignmentStatusBanner(
-                            alignmentScore: alignmentScore,
-                            hasMarker: detectedId != null,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          RoutineSelectorCard(
-                            isReady: isReady,
-                            onStart: _startAiAnalysis,
-                            isConnected: isConnected,
-                            isCalibrated: isCalibrated,
-                            isEStop: isEStop,
-                            markerDetected: markerDetected,
-                            alignmentReady: alignmentReady,
-                            cameraAvailable: cameraAvailable,
-                          ),
-                        ],
+                      child: CleaningControlPanel(
+                        isReady: isReady,
                       ),
-                    ),
-                    
-                    // Primary Action Button anchored at bottom
-                    PrimaryActionButton(
-                      label: isReady ? 'ANALYZE DIRT' : 'NOT READY',
-                      icon: isReady ? AppIcons.play : Icons.block,
-                      onPressed: isReady ? _startAiAnalysis : null,
                     ),
                   ],
                 ),

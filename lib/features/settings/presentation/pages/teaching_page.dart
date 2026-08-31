@@ -1,290 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/routing/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
-import '../../../../features/manual_control/presentation/widgets/camera_placeholder.dart';
 import '../../../../features/manual_control/presentation/widgets/joystick_controller.dart';
-import '../../../../features/manual_control/presentation/widgets/servo_slider_card.dart';
 import '../../../../features/manual_control/presentation/providers/manual_control_provider.dart';
 import '../providers/routine_recording_provider.dart';
 import '../../domain/models/routine_recording_state.dart';
 
-class TeachingPage extends ConsumerWidget {
+class TeachingPage extends ConsumerStatefulWidget {
   const TeachingPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recordState = ref.watch(routineRecordingProvider);
+  ConsumerState<TeachingPage> createState() => _TeachingPageState();
+}
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Arm Teaching',
-          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+class _TeachingPageState extends ConsumerState<TeachingPage> {
+  double _speed = 0.5; // 0.0 – 1.0
+
+  void _showSpeedDialog(BuildContext context, WidgetRef ref) {
+    double tempSpeed = _speed;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Speed Control'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // ── LEFT ZONE: Status & Camera ──────────────────────────────
-              Expanded(
-                flex: 25,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _InfoBanner(),
-                    const SizedBox(height: AppSpacing.md),
-                    const Expanded(
-                      child: CameraPlaceholder(),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _RecordingStatusCard(state: recordState),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xl),
-
-              // ── CENTER ZONE: Joystick ───────────────────────────────────
-              Expanded(
-                flex: 40,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.borderLight, width: 1.5),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const _SectionLabel(label: 'Movement Control'),
-                      const SizedBox(height: AppSpacing.md),
-                      JoystickController(
-                        size: 180,
-                        onDirectionChanged: (offset) {
-                          final notifier = ref.read(manualControlProvider.notifier);
-                          if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
-                            notifier.sendCommand('STOP');
-                          } else if (offset.dy.abs() > offset.dx.abs()) {
-                            notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
-                          } else {
-                            notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xl),
-
-              // ── RIGHT ZONE: Joints & Controls ───────────────────────────
-              Expanded(
-                flex: 35,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _SectionLabel(label: 'Joint Control'),
-                    const SizedBox(height: AppSpacing.sm),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: AppColors.borderLight, width: 1.5),
-                        ),
-                        child: ListView(
-                          children: [
-                            _ServoSection(),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _RecordingControls(state: recordState),
-                  ],
-                ),
+              Text('Current speed: ${(tempSpeed * 100).toStringAsFixed(0)}%',
+                  style: AppTextStyles.bodyMedium),
+              Slider(
+                value: tempSpeed,
+                min: 0.1,
+                max: 1.0,
+                divisions: 9,
+                activeColor: AppColors.primary,
+                onChanged: (v) => setDialogState(() => tempSpeed = v),
               ),
             ],
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              onPressed: () {
+                setState(() => _speed = tempSpeed);
+                ref.read(manualControlProvider.notifier).sendCommand('SET_SPEED:${(tempSpeed * 100).toStringAsFixed(0)}');
+                Navigator.pop(ctx);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-// ─── Sub-widgets ─────────────────────────────────────────────────────────────
-
-class _InfoBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.informationCyan.withOpacity(0.08),
-        borderRadius: AppRadius.mediumRadius,
-        border: Border.all(color: AppColors.informationCyan.withOpacity(0.3)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(AppIcons.info, color: AppColors.informationCyan, size: 20),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              'Move the robot arm to your desired positions, then press Record to capture.',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.informationCyan),
+  void _showEndEffectorDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End Effector Control'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.water_drop_rounded, color: AppColors.informationCyan),
+              title: const Text('Spray ON'),
+              onTap: () { ref.read(manualControlProvider.notifier).sendCommand('EFFECTOR_SPRAY_ON'); Navigator.pop(ctx); },
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.water_drop_outlined, color: AppColors.textSecondary),
+              title: const Text('Spray OFF'),
+              onTap: () { ref.read(manualControlProvider.notifier).sendCommand('EFFECTOR_SPRAY_OFF'); Navigator.pop(ctx); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cleaning_services_rounded, color: AppColors.warningOrange),
+              title: const Text('Brush ON'),
+              onTap: () { ref.read(manualControlProvider.notifier).sendCommand('EFFECTOR_BRUSH_ON'); Navigator.pop(ctx); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cleaning_services_outlined, color: AppColors.textSecondary),
+              title: const Text('Brush OFF'),
+              onTap: () { ref.read(manualControlProvider.notifier).sendCommand('EFFECTOR_BRUSH_OFF'); Navigator.pop(ctx); },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
     );
   }
-}
 
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
-class _RecordingStatusCard extends StatelessWidget {
-  final RoutineRecordingState state;
-  const _RecordingStatusCard({required this.state});
-
-  String get _elapsedFormatted {
-    final s = (state.elapsedMs / 1000).toStringAsFixed(1);
-    return '$s s';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.isIdle) return const SizedBox.shrink();
-    final isRecording = state.isRecording;
-    final color = isRecording ? AppColors.dangerRed : AppColors.warningOrange;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: AppRadius.mediumRadius,
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          Icon(isRecording ? AppIcons.record : AppIcons.stopRecord, color: color, size: 18),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isRecording ? 'Recording…' : 'Recording complete',
-                  style: AppTextStyles.bodyMedium.copyWith(color: color, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  '${state.frames.length} frames · $_elapsedFormatted',
-                  style: AppTextStyles.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ServoSection extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final servos = ref.watch(manualControlProvider).servos;
-    return Column(
-      children: servos
-          .map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: ServoSliderCard(servo: s),
-              ))
-          .toList(),
-    );
-  }
-}
-
-class _RecordingControls extends ConsumerWidget {
-  final RoutineRecordingState state;
-  const _RecordingControls({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(routineRecordingProvider.notifier);
-
-    if (state.status == RecordingStatus.saving) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showSaveDialog(context, ref);
-      });
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: state.isRecording ? null : notifier.startRecording,
-            icon: const Icon(AppIcons.record, size: 18),
-            label: const Text('Record'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.dangerRed,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              shape: const StadiumBorder(),
-              elevation: 0,
-              disabledBackgroundColor: AppColors.borderLight,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: state.isRecording ? notifier.stopRecording : null,
-            icon: const Icon(AppIcons.stopRecord, size: 18),
-            label: const Text('Stop'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.text,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              shape: const StadiumBorder(),
-              elevation: 0,
-              disabledBackgroundColor: AppColors.borderLight,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showSaveDialog(BuildContext context, WidgetRef ref) {
+  void _showSaveDialog(BuildContext context) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -353,6 +167,326 @@ class _RecordingControls extends ConsumerWidget {
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recordState = ref.watch(routineRecordingProvider);
+
+    // Trigger save dialog when recording stops
+    if (recordState.status == RecordingStatus.saving) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSaveDialog(context);
+      });
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Arm Teaching',
+          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── LEFT: Linear Motion (Up / Down) ──────────────────────────
+              SizedBox(
+                width: 80,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.borderLight, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const _SectionLabel(label: 'LINEAR'),
+                      const SizedBox(height: AppSpacing.md),
+                      _LinearButton(
+                        icon: Icons.keyboard_arrow_up_rounded,
+                        label: 'UP',
+                        color: AppColors.primary,
+                        onPressed: () => ref.read(manualControlProvider.notifier).sendCommand('LINEAR_UP'),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _LinearButton(
+                        icon: Icons.keyboard_arrow_down_rounded,
+                        label: 'DOWN',
+                        color: AppColors.warningOrange,
+                        onPressed: () => ref.read(manualControlProvider.notifier).sendCommand('LINEAR_DOWN'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+
+              // ── CENTER: Joystick ──────────────────────────────────────────
+              Expanded(
+                flex: 5,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.borderLight, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const _SectionLabel(label: 'MOVEMENT CONTROL'),
+                      const SizedBox(height: AppSpacing.md),
+                      JoystickController(
+                        size: 200,
+                        onDirectionChanged: (offset) {
+                          final notifier = ref.read(manualControlProvider.notifier);
+                          if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
+                            notifier.sendCommand('STOP');
+                          } else if (offset.dy.abs() > offset.dx.abs()) {
+                            notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
+                          } else {
+                            notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
+                          }
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _RecordingStatusCard(state: recordState),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+
+              // ── RIGHT: Action Panel ───────────────────────────────────────
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Speed Control
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.speed_rounded,
+                        label: 'Speed Control',
+                        color: AppColors.informationCyan,
+                        onTap: () => _showSpeedDialog(context, ref),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // End Effector Control
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.precision_manufacturing_rounded,
+                        label: 'End Effector',
+                        color: const Color(0xFF6C63FF),
+                        onTap: () => _showEndEffectorDialog(context, ref),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Record
+                    Expanded(
+                      child: _ActionCard(
+                        icon: AppIcons.record,
+                        label: 'Record',
+                        color: AppColors.dangerRed,
+                        isDisabled: recordState.isRecording,
+                        onTap: recordState.isRecording
+                            ? null
+                            : () => ref.read(routineRecordingProvider.notifier).startRecording(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Stop
+                    Expanded(
+                      child: _ActionCard(
+                        icon: AppIcons.stopRecord,
+                        label: 'Stop',
+                        color: AppColors.text,
+                        isDisabled: !recordState.isRecording,
+                        onTap: !recordState.isRecording
+                            ? null
+                            : () => ref.read(routineRecordingProvider.notifier).stopRecording(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Go to Library
+                    Expanded(
+                      child: _ActionCard(
+                        icon: AppIcons.library,
+                        label: 'Go to Library',
+                        color: AppColors.primary,
+                        onTap: () => context.push(AppRoutes.motionLibrary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+      textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _RecordingStatusCard extends StatelessWidget {
+  final RoutineRecordingState state;
+  const _RecordingStatusCard({required this.state});
+
+  String get _elapsedFormatted {
+    final s = (state.elapsedMs / 1000).toStringAsFixed(1);
+    return '$s s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isIdle) return const SizedBox.shrink();
+    final isRecording = state.isRecording;
+    final color = isRecording ? AppColors.dangerRed : AppColors.warningOrange;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: AppRadius.mediumRadius,
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(isRecording ? AppIcons.record : AppIcons.stopRecord, color: color, size: 18),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isRecording ? 'Recording…' : 'Recording complete',
+                  style: AppTextStyles.bodyMedium.copyWith(color: color, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '${state.frames.length} frames · $_elapsedFormatted',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinearButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _LinearButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            Text(label, style: AppTextStyles.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold, fontSize: 9)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+  final bool isDisabled;
+
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.onTap,
+    this.isDisabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = isDisabled ? AppColors.textMuted : color;
+    return GestureDetector(
+      onTap: isDisabled ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: isDisabled ? AppColors.borderLight.withOpacity(0.5) : effectiveColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDisabled ? AppColors.borderLight : effectiveColor.withOpacity(0.4),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: effectiveColor, size: 22),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: effectiveColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
