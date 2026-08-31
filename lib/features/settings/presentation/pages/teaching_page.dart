@@ -245,27 +245,36 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: AppColors.borderLight, width: 1.5),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const _SectionLabel(label: 'MOVEMENT CONTROL'),
-                      const SizedBox(height: AppSpacing.md),
-                      JoystickController(
-                        size: 200,
-                        onDirectionChanged: (offset) {
-                          final notifier = ref.read(manualControlProvider.notifier);
-                          if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
-                            notifier.sendCommand('STOP');
-                          } else if (offset.dy.abs() > offset.dx.abs()) {
-                            notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
-                          } else {
-                            notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
-                          }
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _RecordingStatusCard(state: recordState),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Fit joystick to available height minus label and status card
+                      final maxJoy = (constraints.maxHeight - 80).clamp(100.0, 200.0);
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const _SectionLabel(label: 'MOVEMENT CONTROL'),
+                          const SizedBox(height: AppSpacing.sm),
+                          JoystickController(
+                            size: maxJoy,
+                            onDirectionChanged: (offset) {
+                              final notifier = ref.read(manualControlProvider.notifier);
+                              if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
+                                notifier.sendCommand('STOP');
+                              } else if (offset.dy.abs() > offset.dx.abs()) {
+                                notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
+                              } else {
+                                notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
+                              }
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                            child: _RecordingStatusCard(state: recordState),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),

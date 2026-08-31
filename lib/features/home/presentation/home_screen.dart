@@ -143,9 +143,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Row(
           children: [
-            // ── LEFT PANEL: Camera (flex: 3) ────────────────────────────────────
+            // ── LEFT PANEL: Camera (flex: 7) ────────────────────────────────────
             Expanded(
-              flex: 3,
+              flex: 7,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(32),
@@ -157,13 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // Camera preview or loading state
                     if (_cameraController != null &&
                         _cameraController!.value.isInitialized)
-                      Center(
-                        child: AspectRatio(
-                          // The camera is native portrait, so in landscape we flip the aspect ratio
-                          aspectRatio: 1 / _cameraController!.value.aspectRatio,
-                          child: CameraPreview(_cameraController!),
-                        ),
-                      )
+                      CameraPreview(_cameraController!)
                     else
                       _CameraLoadingView(status: visionState.status),
 
@@ -224,9 +218,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── RIGHT PANEL: Action & Status (flex: 1) ─────────────────────────
+            // ── RIGHT PANEL: Action & Status (flex: 3) ─────────────────────────
             Expanded(
-              flex: 1,
+              flex: 3,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(

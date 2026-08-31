@@ -11,14 +11,15 @@ enum CleaningIntensity { normal, medium, hard }
 
 class CleaningControlPanel extends ConsumerStatefulWidget {
   final bool isReady;
-  
+
   const CleaningControlPanel({
     super.key,
     required this.isReady,
   });
 
   @override
-  ConsumerState<CleaningControlPanel> createState() => _CleaningControlPanelState();
+  ConsumerState<CleaningControlPanel> createState() =>
+      _CleaningControlPanelState();
 }
 
 class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
@@ -27,9 +28,7 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
 
   void _handleStart() async {
     if (!widget.isReady) return;
-    
     setState(() => _isRunning = true);
-    
     CleaningProfile profile;
     switch (_selectedIntensity) {
       case CleaningIntensity.normal:
@@ -60,7 +59,6 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
         );
         break;
     }
-    
     final repo = ref.read(robotRepositoryProvider);
     await repo.startCleaningWithProfile(profile);
   }
@@ -80,7 +78,7 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.cardGlass,
         borderRadius: BorderRadius.circular(24),
@@ -88,27 +86,34 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Mode label ──
           Text(
             'CLEANING MODE',
-            style: AppTextStyles.titleLarge.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.lg),
-          
-          // Intensity Selectors
+          const SizedBox(height: AppSpacing.sm),
+
+          // ── Intensity Selectors ──
           Row(
             children: [
               Expanded(child: _buildIntensityButton(CleaningIntensity.normal, 'Normal', Icons.water_drop_outlined)),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(child: _buildIntensityButton(CleaningIntensity.medium, 'Medium', Icons.water_drop)),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(child: _buildIntensityButton(CleaningIntensity.hard, 'Hard', Icons.warning_amber_rounded)),
             ],
           ),
-          
-          const SizedBox(height: AppSpacing.xl),
-          
-          // Action Buttons
+
+          const SizedBox(height: AppSpacing.md),
+
+          // ── Action Buttons ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -131,26 +136,27 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
                 label: 'START',
               ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildIntensityButton(CleaningIntensity intensity, String label, IconData icon) {
+  Widget _buildIntensityButton(
+      CleaningIntensity intensity, String label, IconData icon) {
     final isSelected = _selectedIntensity == intensity;
     return GestureDetector(
       onTap: () {
-        if (!_isRunning) {
-          setState(() => _selectedIntensity = intensity);
-        }
+        if (!_isRunning) setState(() => _selectedIntensity = intensity);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.15) : AppColors.backgroundLight,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.12)
+              : AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.borderLight,
             width: isSelected ? 2 : 1,
@@ -162,15 +168,19 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
             Icon(
               icon,
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              size: 28,
+              size: 22,
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              style: AppTextStyles.bodySmall.copyWith(
+                color:
+                    isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight:
+                    isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 11,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -188,22 +198,36 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          onPressed: onPressed,
-          icon: Icon(icon, size: 36),
-          style: IconButton.styleFrom(
-            backgroundColor: isDisabled ? AppColors.borderLight.withOpacity(0.3) : color.withOpacity(0.15),
-            foregroundColor: isDisabled ? Colors.white38 : color,
-            padding: const EdgeInsets.all(20),
-            shape: const CircleBorder(),
+        GestureDetector(
+          onTap: onPressed,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDisabled
+                  ? AppColors.borderLight.withOpacity(0.4)
+                  : color.withOpacity(0.15),
+              border: Border.all(
+                color: isDisabled ? AppColors.borderLight : color.withOpacity(0.5),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 26,
+              color: isDisabled ? AppColors.textMuted : color,
+            ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: 4),
         Text(
           label,
           style: AppTextStyles.bodySmall.copyWith(
-            color: isDisabled ? Colors.white38 : color,
-            fontWeight: FontWeight.bold,
+            color: isDisabled ? AppColors.textMuted : color,
+            fontWeight: FontWeight.w700,
+            fontSize: 10,
           ),
         ),
       ],

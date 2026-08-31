@@ -33,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -259,18 +259,25 @@ class _SettingsTile extends StatelessWidget {
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(width: AppSpacing.lg),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(title, style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600)),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
                       if (badge != null) ...[
-                        const SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: AppSpacing.xs),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
                             color: badgeColor!.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(6),
@@ -280,7 +287,7 @@ class _SettingsTile extends StatelessWidget {
                             style: AppTextStyles.bodySmall.copyWith(
                               color: badgeColor,
                               fontWeight: FontWeight.w700,
-                              fontSize: 10,
+                              fontSize: 9,
                             ),
                           ),
                         ),
@@ -288,11 +295,16 @@ class _SettingsTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
           ],
         ),
       ),
