@@ -1,5 +1,6 @@
 import '../robot_repository.dart';
 import '../../simulation/robot_simulator.dart';
+import '../../../features/auto_cleaning/domain/models/cleaning_profile.dart';
 
 class MockRobotRepository implements RobotRepository {
   final RobotSimulator _simulator;
@@ -29,6 +30,17 @@ class MockRobotRepository implements RobotRepository {
   @override
   Future<void> startCleaning() async {
     await _simulator.sendCommand('START_CLEANING', {});
+  }
+
+  @override
+  Future<void> startCleaningWithProfile(CleaningProfile profile) async {
+    await _simulator.sendCommand('START_CLEANING_PROFILE', {
+      'severity': profile.severity.index,
+      'water_ml': profile.waterVolumeMl,
+      'pump_ms': profile.pumpDurationMs,
+      'brush_ms': profile.brushDurationMs,
+      'routine': profile.routineId,
+    });
   }
 
   @override

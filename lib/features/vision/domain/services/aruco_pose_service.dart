@@ -35,11 +35,19 @@ class ArucoPoseResponse {
   final List<ArucoDetectionResult> allDetections;
   final ArucoDetectionResult? activeDetection;
   final MarkerPose? activePose;
+  
+  // Diagnostics
+  final String grayscaleConversionStatus;
+  final String opencvMatDimensions;
+  final int detectionDurationMs;
 
   ArucoPoseResponse({
     required this.allDetections,
     this.activeDetection,
     this.activePose,
+    this.grayscaleConversionStatus = 'Unknown',
+    this.opencvMatDimensions = 'Unknown',
+    this.detectionDurationMs = 0,
   });
 }
 
@@ -47,6 +55,9 @@ class ArucoPoseService {
   static Future<ArucoPoseResponse> detectAndEstimatePose(
       ArucoPoseRequest request) async {
     return Isolate.run(() {
+      final startTime = DateTime.now();
+      String conversionStatus = 'Pending';
+      String matDims = 'Unknown';
       cv.Mat? grayMat;
       cv.ArucoDictionary? dict;
       cv.ArucoDetectorParameters? params;
@@ -67,6 +78,9 @@ class ArucoPoseService {
               i * request.rowStride
             );
           }
+          conversionStatus = 'SUCCESS (Stride Handled)';
+        } else {
+          conversionStatus = 'SUCCESS (Direct)';
         }
 
         grayMat = cv.Mat.fromList(
@@ -75,6 +89,7 @@ class ArucoPoseService {
           cv.MatType.CV_8UC1,
           processedBytes,
         );
+        matDims = '${grayMat.cols}x${grayMat.rows}';
 
         // 2. Detect ArUco Marker with tuned parameters from Android app
         dict = cv.ArucoDictionary.predefined(request.dictType);
@@ -92,8 +107,17 @@ class ArucoPoseService {
         cornersList = result.$1;
         idsList = result.$2;
 
+        final detectionDuration = DateTime.now().difference(startTime).inMilliseconds;
+
         if (idsList.isEmpty) {
-          return ArucoPoseResponse(allDetections: [], activeDetection: null, activePose: null);
+          return ArucoPoseResponse(
+            allDetections: [], 
+            activeDetection: null, 
+            activePose: null,
+            grayscaleConversionStatus: conversionStatus,
+            opencvMatDimensions: matDims,
+            detectionDurationMs: detectionDuration,
+          );
         }
 
         List<ArucoDetectionResult> allDetections = [];
@@ -168,14 +192,28 @@ class ArucoPoseService {
         }
 
         if (bestTargetIndex == -1 || allDetections[bestTargetIndex].pixelWidth < 20.0) {
-          return ArucoPoseResponse(allDetections: allDetections, activeDetection: null, activePose: null);
+          return ArucoPoseResponse(
+            allDetections: allDetections, 
+            activeDetection: null, 
+            activePose: null,
+            grayscaleConversionStatus: conversionStatus,
+            opencvMatDimensions: matDims,
+            detectionDurationMs: detectionDuration,
+          );
         }
 
         final activeDetection = allDetections[bestTargetIndex];
         
         final hasCalibration = request.calibration != null && request.calibration!.isValid;
         if (!hasCalibration || request.calibration!.imageWidth == 0 || request.calibration!.imageHeight == 0) {
-          return ArucoPoseResponse(allDetections: allDetections, activeDetection: activeDetection, activePose: null);
+          return ArucoPoseResponse(
+            allDetections: allDetections, 
+            activeDetection: activeDetection, 
+            activePose: null,
+            grayscaleConversionStatus: conversionStatus,
+            opencvMatDimensions: matDims,
+            detectionDurationMs: detectionDuration,
+          );
         }
 
         final scaleX = request.width / request.calibration!.imageWidth;
@@ -209,6 +247,9 @@ class ArucoPoseService {
           allDetections: allDetections, 
           activeDetection: activeDetection, 
           activePose: pose,
+          grayscaleConversionStatus: conversionStatus,
+          opencvMatDimensions: matDims,
+          detectionDurationMs: detectionDuration,
         );
       } finally {
         grayMat?.dispose();

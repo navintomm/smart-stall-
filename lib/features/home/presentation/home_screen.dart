@@ -8,6 +8,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../settings/presentation/providers/motion_library_provider.dart';
+import '../../settings/presentation/providers/global_settings_provider.dart';
 import '../../vision/presentation/providers/aruco_vision_provider.dart';
 import '../../vision/domain/models/aruco_detection_result.dart';
 import '../../vision/presentation/providers/alignment_provider.dart';
@@ -21,6 +22,10 @@ import 'widgets/home_hud_overlay.dart';
 import 'widgets/routine_selector_card.dart';
 import '../../../shared/widgets/cards/surface_card.dart';
 import '../../../shared/widgets/buttons/primary_action_button.dart';
+import '../../vision/domain/services/dirt_detection_service.dart';
+import '../../auto_cleaning/domain/services/cleaning_decision_service.dart';
+import '../../auto_cleaning/domain/models/cleaning_profile.dart';
+import '../../auto_cleaning/presentation/widgets/cleaning_decision_summary_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +37,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ─── Camera & Vision ─────────────────────────────────────────────────────
   CameraController? _cameraController;
+  
+  // ─── AI State ────────────────────────────────────────────────────────────
+  bool _isAnalyzing = false;
+  CleaningProfile? _recommendedProfile;
 
   @override
   void initState() {
@@ -80,17 +89,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       height: image.height,
       rowStride: plane.bytesPerRow,
     );
+
+    // AI Analysis Pipeline
+    if (_isAnalyzing) {
+      _isAnalyzing = false; // only trigger once per analysis request
+      _runAiAnalysis(image);
+    }
   }
 
-  Future<void> _onStart() async {
-    final library = ref.read(motionLibraryProvider);
-    // Determine which routine to play
-    final routines = library.routines;
-    if (routines.isEmpty) return;
-    final targetId = library.defaultRoutineId ?? routines.first.id;
+  Future<void> _runAiAnalysis(CameraImage image) async {
+    final aiService = ref.read(dirtDetectionServiceProvider);
+    final result = await aiService.processFrame(image);
+    
+    // Dismiss the loading dialog
+    if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
 
+    if (result != null && mounted) {
+      final decisionService = ref.read(cleaningDecisionServiceProvider);
+      final profile = decisionService.generateRecommendation(result);
+      
+      setState(() {
+        _recommendedProfile = profile;
+      });
+
+      // Show summary dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: CleaningDecisionSummaryWidget(
+            result: result,
+            profile: profile,
+            onConfirm: () {
+              Navigator.of(context).pop();
+              _confirmAndStartCleaning();
+            },
+            onCancel: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _recommendedProfile = null;
+              });
+            },
+          ),
+        ),
+      );
+    } else if (mounted) {
+      setState(() {
+        _isAnalyzing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AI Analysis failed or was busy.')),
+      );
+    }
+  }
+
+  void _startAiAnalysis() {
+    setState(() {
+      _isAnalyzing = true;
+      _recommendedProfile = null;
+    });
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Analyzing dirt level...'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Called after setState is done in _runAiAnalysis
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Not the best place, we can handle dialog dismissal in _runAiAnalysis
+  }
+
+  Future<void> _confirmAndStartCleaning() async {
+    if (_recommendedProfile == null) return;
+    
     final repo = ref.read(robotRepositoryProvider);
-    await repo.sendCommand('PLAY_ROUTINE', {'id': targetId});
+    await repo.startCleaningWithProfile(_recommendedProfile!);
+
+    setState(() {
+      _recommendedProfile = null;
+    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,7 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Icon(AppIcons.play, color: Colors.white, size: 18),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              'Routine started',
+              'Cleaning started (AI Profile)',
               style: AppTextStyles.bodyLarge.copyWith(color: Colors.white),
             ),
           ]),
@@ -132,6 +226,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isEStop = ref.watch(manualControlProvider).emergencyStopEngaged;
     final isCalibrated = ref.watch(calibrationProvider).isValid;
     final libraryState = ref.watch(motionLibraryProvider);
+    final globalSettings = ref.watch(globalSettingsProvider);
     
     // Check all required conditions for Start Cleaning
     final cameraAvailable = _cameraController?.value.isInitialized ?? false;
@@ -185,7 +280,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // Camera preview or loading state
                     if (_cameraController != null &&
                         _cameraController!.value.isInitialized)
-                      CameraPreview(_cameraController!)
+                      Center(
+                        child: AspectRatio(
+                          // The camera is native portrait, so in landscape we flip the aspect ratio
+                          aspectRatio: 1 / _cameraController!.value.aspectRatio,
+                          child: CameraPreview(_cameraController!),
+                        ),
+                      )
                     else
                       _CameraLoadingView(status: visionState.status),
 
@@ -215,6 +316,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       isEStop: isEStop,
                       isConnected: isConnected,
                     ),
+
+                    // Marker Debug Overlay
+                    if (globalSettings.debugVisionMode)
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.primary, width: 1),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('DEBUG VISION MODE', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('FPS: ${visionState.fps.toStringAsFixed(1)}', style: AppTextStyles.bodySmall.copyWith(color: Colors.white)),
+                              Text('Latency: ${visionState.lastDetectionDurationMs}ms', style: AppTextStyles.bodySmall.copyWith(color: Colors.white)),
+                              Text('Detections: ${visionState.allDetections.length}', style: AppTextStyles.bodySmall.copyWith(color: Colors.white)),
+                              Text('IDs: ${visionState.debugIds}', style: AppTextStyles.bodySmall.copyWith(color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -327,7 +454,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(height: AppSpacing.md),
                           RoutineSelectorCard(
                             isReady: isReady,
-                            onStart: _onStart,
+                            onStart: _startAiAnalysis,
                             isConnected: isConnected,
                             isCalibrated: isCalibrated,
                             isEStop: isEStop,
@@ -341,9 +468,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     
                     // Primary Action Button anchored at bottom
                     PrimaryActionButton(
-                      label: isReady ? 'START CLEANING' : 'NOT READY',
+                      label: isReady ? 'ANALYZE DIRT' : 'NOT READY',
                       icon: isReady ? AppIcons.play : Icons.block,
-                      onPressed: isReady ? _onStart : null,
+                      onPressed: isReady ? _startAiAnalysis : null,
                     ),
                   ],
                 ),

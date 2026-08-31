@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../settings/presentation/providers/global_settings_provider.dart';
 
 class DeveloperSettingsCard extends ConsumerStatefulWidget {
   const DeveloperSettingsCard({super.key});
@@ -19,6 +20,8 @@ class _DeveloperSettingsCardState extends ConsumerState<DeveloperSettingsCard> {
 
   @override
   Widget build(BuildContext context) {
+    final globalSettings = ref.watch(globalSettingsProvider);
+
     return GlassCard(
       animateEntrance: true,
       delay: const Duration(milliseconds: 200),
@@ -26,6 +29,15 @@ class _DeveloperSettingsCardState extends ConsumerState<DeveloperSettingsCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Developer Settings', style: AppTextStyles.titleLarge),
+          SwitchListTile(
+            title: Text('Debug Vision Mode', style: AppTextStyles.bodyLarge),
+            subtitle: Text('Show raw OpenCV pipeline overlay on camera feed', style: AppTextStyles.bodySmall),
+            value: globalSettings.debugVisionMode,
+            activeColor: AppColors.primary,
+            onChanged: (val) {
+              ref.read(globalSettingsProvider.notifier).setDebugVisionMode(val);
+            },
+          ),
           SwitchListTile(
             title: Text('Simulation Mode', style: AppTextStyles.bodyLarge),
             subtitle: Text('Use mock hardware responses', style: AppTextStyles.bodySmall),

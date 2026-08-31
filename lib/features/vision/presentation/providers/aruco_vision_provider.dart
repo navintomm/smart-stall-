@@ -22,6 +22,15 @@ class ArucoVisionState {
   final String debugIds;
   final String debugError;
   final DateTime timestamp;
+  
+  // Pipeline Tracing Diagnostics
+  final int totalFrameCount;
+  final String pixelFormat;
+  final String grayscaleConversionStatus;
+  final String opencvMatDimensions;
+  final int detectionAttemptCount;
+  final int lastDetectionDurationMs;
+  final DateTime? lastDetectionTimestamp;
 
   ArucoVisionState({
     this.allDetections = const [],
@@ -36,6 +45,13 @@ class ArucoVisionState {
     this.debugIds = '[]',
     this.debugError = '',
     DateTime? timestamp,
+    this.totalFrameCount = 0,
+    this.pixelFormat = 'Y-Plane / YUV420',
+    this.grayscaleConversionStatus = 'Pending',
+    this.opencvMatDimensions = 'Unknown',
+    this.detectionAttemptCount = 0,
+    this.lastDetectionDurationMs = 0,
+    this.lastDetectionTimestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
   ArucoVisionState copyWith({
@@ -50,6 +66,13 @@ class ArucoVisionState {
     int? rowStride,
     String? debugIds,
     String? debugError,
+    int? totalFrameCount,
+    String? pixelFormat,
+    String? grayscaleConversionStatus,
+    String? opencvMatDimensions,
+    int? detectionAttemptCount,
+    int? lastDetectionDurationMs,
+    DateTime? lastDetectionTimestamp,
     bool clearDetection = false,
   }) {
     return ArucoVisionState(
@@ -64,6 +87,13 @@ class ArucoVisionState {
       rowStride: rowStride ?? this.rowStride,
       debugIds: debugIds ?? this.debugIds,
       debugError: debugError ?? this.debugError,
+      totalFrameCount: totalFrameCount ?? this.totalFrameCount,
+      pixelFormat: pixelFormat ?? this.pixelFormat,
+      grayscaleConversionStatus: grayscaleConversionStatus ?? this.grayscaleConversionStatus,
+      opencvMatDimensions: opencvMatDimensions ?? this.opencvMatDimensions,
+      detectionAttemptCount: detectionAttemptCount ?? this.detectionAttemptCount,
+      lastDetectionDurationMs: lastDetectionDurationMs ?? this.lastDetectionDurationMs,
+      lastDetectionTimestamp: lastDetectionTimestamp ?? this.lastDetectionTimestamp,
     );
   }
 }
@@ -79,6 +109,9 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
   int _frameCount = 0;
   double _currentFps = 0.0;
 
+  int _totalProcessedFrames = 0;
+  int _totalDetectionAttempts = 0;
+
   ArucoVisionNotifier(this._ref) : super(ArucoVisionState());
 
   void setStatus(String status) {
@@ -91,9 +124,16 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
     required int height,
     required int rowStride,
   }) async {
+    _totalProcessedFrames++;
+
     if (state.isProcessing) return;
 
-    state = state.copyWith(isProcessing: true);
+    _totalDetectionAttempts++;
+    state = state.copyWith(
+      isProcessing: true,
+      totalFrameCount: _totalProcessedFrames,
+      detectionAttemptCount: _totalDetectionAttempts,
+    );
 
     final now = DateTime.now();
     _frameCount++;
@@ -168,6 +208,10 @@ class ArucoVisionNotifier extends StateNotifier<ArucoVisionState> {
               ? '[]' 
               : '[${enrichedDetections.map((d) => d.markerId).join(', ')}]',
           debugError: '',
+          grayscaleConversionStatus: response.grayscaleConversionStatus,
+          opencvMatDimensions: response.opencvMatDimensions,
+          lastDetectionDurationMs: response.detectionDurationMs,
+          lastDetectionTimestamp: response.activeDetection != null ? now : state.lastDetectionTimestamp,
         );
       }
     } catch (e) {

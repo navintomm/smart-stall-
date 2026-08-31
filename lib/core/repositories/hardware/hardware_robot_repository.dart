@@ -6,6 +6,7 @@ import '../../communication/protocol/models/base_packet.dart';
 import '../../communication/protocol/models/packet_type.dart';
 import '../../communication/protocol/catalogues/command_catalog.dart';
 import '../../communication/protocol/validator/protocol_validator.dart';
+import '../../../features/auto_cleaning/domain/models/cleaning_profile.dart';
 
 class HardwareRobotRepository implements RobotRepository {
   final RobotTransport _transport;
@@ -56,6 +57,17 @@ class HardwareRobotRepository implements RobotRepository {
   @override
   Future<void> startCleaning() async {
     await sendCommand('START_CLEANING', {});
+  }
+
+  @override
+  Future<void> startCleaningWithProfile(CleaningProfile profile) async {
+    await sendCommand('START_CLEANING_PROFILE', {
+      'severity': profile.severity.index,
+      'water_ml': profile.waterVolumeMl,
+      'pump_ms': profile.pumpDurationMs,
+      'brush_ms': profile.brushDurationMs,
+      'routine': profile.routineId,
+    });
   }
 
   @override

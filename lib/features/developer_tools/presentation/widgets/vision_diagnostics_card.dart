@@ -35,6 +35,19 @@ class VisionDiagnosticsCard extends ConsumerWidget {
           if (visionState.detection != null)
             _buildRow('Semantic Label:', visionState.detection!.semanticName),
           const Divider(color: Colors.white24),
+          Text('Pipeline Trace', style: AppTextStyles.bodyMedium),
+          const SizedBox(height: AppSpacing.xs),
+          _buildRow('Incoming Frames:', '${visionState.totalFrameCount}'),
+          _buildRow('Attempted Detections:', '${visionState.detectionAttemptCount}'),
+          _buildRow('Pixel Format:', visionState.pixelFormat),
+          _buildRow('Y-Plane Convert:', visionState.grayscaleConversionStatus),
+          _buildRow('OpenCV Mat Size:', visionState.opencvMatDimensions),
+          _buildRow('Detector Latency:', '${visionState.lastDetectionDurationMs} ms'),
+          _buildRow('Last Detection:', visionState.lastDetectionTimestamp != null 
+              ? '${DateTime.now().difference(visionState.lastDetectionTimestamp!).inMilliseconds} ms ago' 
+              : 'Never'),
+          
+          const Divider(color: Colors.white24),
           Text('Raw Pose Estimation', style: AppTextStyles.bodyMedium),
           const SizedBox(height: AppSpacing.xs),
           if (visionState.pose != null) ...[
