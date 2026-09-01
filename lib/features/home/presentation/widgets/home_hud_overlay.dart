@@ -57,8 +57,8 @@ class HomeHudOverlay extends StatelessWidget {
           ),
         ),
 
-        // Centre safety warning overlay — only shown for E-Stop or Disconnect
-        if (isEStop || !isConnected)
+        // Centre safety warning overlay — only shown for Emergency Stop
+        if (isEStop)
           Positioned.fill(
             child: Center(
               child: Container(
@@ -67,27 +67,26 @@ class HomeHudOverlay extends StatelessWidget {
                   vertical: AppSpacing.lg,
                 ),
                 decoration: BoxDecoration(
-                  color: (isEStop ? AppColors.dangerRed : AppColors.warningOrange)
-                      .withOpacity(0.15),
+                  color: AppColors.dangerRed.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                    color: AppColors.dangerRed,
                     width: 2,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      isEStop ? Icons.emergency_rounded : Icons.link_off_rounded,
-                      color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                    const Icon(
+                      Icons.emergency_rounded,
+                      color: AppColors.dangerRed,
                       size: 28,
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Text(
-                      isEStop ? 'EMERGENCY STOP' : 'DISCONNECTED',
+                      'EMERGENCY STOP',
                       style: AppTextStyles.titleLarge.copyWith(
-                        color: isEStop ? AppColors.dangerRed : AppColors.warningOrange,
+                        color: AppColors.dangerRed,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
                       ),

@@ -430,22 +430,33 @@ class _LinearButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.4), width: 1.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 28),
-            Text(label, style: AppTextStyles.bodySmall.copyWith(color: color, fontWeight: FontWeight.bold, fontSize: 9)),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 26),
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 9,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -470,31 +481,40 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = isDisabled ? AppColors.textMuted : color;
-    return GestureDetector(
-      onTap: isDisabled ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: isDisabled ? AppColors.borderLight.withOpacity(0.5) : effectiveColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDisabled ? AppColors.borderLight : effectiveColor.withOpacity(0.4),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: effectiveColor, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: effectiveColor,
-                fontWeight: FontWeight.w600,
-              ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isDisabled ? null : onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: isDisabled
+                ? AppColors.borderLight.withOpacity(0.35)
+                : effectiveColor.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDisabled
+                  ? AppColors.borderLight
+                  : effectiveColor.withOpacity(0.35),
+              width: 1.5,
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: effectiveColor, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: effectiveColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

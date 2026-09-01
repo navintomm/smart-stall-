@@ -67,7 +67,7 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.xl),
+                    const SizedBox(width: AppSpacing.md),
 
                     // ROUTINES
                     Expanded(
@@ -81,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
                             subtitle: 'Manage saved routines',
                             onTap: () => context.push(AppRoutes.motionLibrary),
                           ),
-                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          const Divider(height: 1, indent: 56, color: AppColors.borderLight),
                           _SettingsTile(
                             icon: AppIcons.defaultRoutine,
                             iconColor: AppColors.warningOrange,
@@ -92,7 +92,7 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.xl),
+                    const SizedBox(width: AppSpacing.md),
 
                     // VISION
                     Expanded(
@@ -106,7 +106,7 @@ class SettingsScreen extends ConsumerWidget {
                             subtitle: 'Calibrate camera & distance',
                             onTap: () => context.push(AppRoutes.cameraCalibration),
                           ),
-                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          const Divider(height: 1, indent: 56, color: AppColors.borderLight),
                           Consumer(builder: (context, ref, child) {
                             final globalSettings = ref.watch(globalSettingsProvider);
                             return _SettingsTile(
@@ -192,13 +192,14 @@ class _SettingsGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.sm),
+          padding: const EdgeInsets.only(left: AppSpacing.sm, bottom: AppSpacing.xs),
           child: Text(
             title,
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
               letterSpacing: 1.2,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
             ),
           ),
         ),
@@ -210,8 +211,8 @@ class _SettingsGroup extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -247,19 +248,19 @@ class _SettingsTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +270,10 @@ class _SettingsTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600),
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -277,17 +281,17 @@ class _SettingsTile extends StatelessWidget {
                       if (badge != null) ...[
                         const SizedBox(width: AppSpacing.xs),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
                             color: badgeColor!.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             badge!,
                             style: AppTextStyles.bodySmall.copyWith(
                               color: badgeColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 8,
                             ),
                           ),
                         ),
@@ -297,14 +301,17 @@ class _SettingsTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
                     overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                    maxLines: 1,
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 16),
           ],
         ),
       ),
