@@ -18,12 +18,43 @@ class HardwareRobotRepository implements RobotRepository {
   @override
   Future<void> sendCommand(String command, Map<String, dynamic> payload) async {
     int cmdId = 0;
-    try {
-      cmdId = CommandCatalog.allCommands.firstWhere((cmd) => cmd.name == command).id;
-    } catch (_) {
-      // Fallback manual maps just in case
-      if (command == 'MOVE_SERVO') cmdId = CommandCatalog.baseRotation.id;
-      if (command == 'TOGGLE_TOOL') cmdId = CommandCatalog.waterPump.id;
+    Map<String, dynamic> finalPayload = Map.from(payload);
+
+    if (command == 'EFFECTOR_SPRAY_ON') {
+      cmdId = CommandCatalog.waterPump.id;
+      finalPayload = {'state': 1};
+    } else if (command == 'EFFECTOR_SPRAY_OFF') {
+      cmdId = CommandCatalog.waterPump.id;
+      finalPayload = {'state': 0};
+    } else if (command == 'EFFECTOR_BRUSH_ON') {
+      cmdId = CommandCatalog.brushMotor.id;
+      finalPayload = {'state': 1};
+    } else if (command == 'EFFECTOR_BRUSH_OFF') {
+      cmdId = CommandCatalog.brushMotor.id;
+      finalPayload = {'state': 0};
+    } else if (command == 'LINEAR_UP') {
+      cmdId = CommandCatalog.shoulder.id;
+      finalPayload = {'angle': 90};
+    } else if (command == 'LINEAR_DOWN') {
+      cmdId = CommandCatalog.shoulder.id;
+      finalPayload = {'angle': 0};
+    } else if (command.startsWith('SET_SPEED:')) {
+      final speedVal = int.tryParse(command.split(':').last) ?? 50;
+      cmdId = CommandCatalog.brushRotation.id;
+      finalPayload = {'speed': speedVal};
+    } else {
+      try {
+        cmdId = CommandCatalog.allCommands.firstWhere((cmd) => cmd.name == command).id;
+      } catch (_) {
+        if (command == 'MOVE_SERVO') cmdId = CommandCatalog.baseRotation.id;
+        if (command == 'TOGGLE_TOOL') cmdId = CommandCatalog.waterPump.id;
+      }
+    }
+
+    // Default speed for movement commands if not provided
+    if (['MOVE_FORWARD', 'MOVE_BACKWARD', 'TURN_LEFT', 'TURN_RIGHT'].contains(command) &&
+        !finalPayload.containsKey('speed')) {
+      finalPayload['speed'] = 50;
     }
 
     final packet = RobotPacket(
@@ -31,8 +62,8 @@ class HardwareRobotRepository implements RobotRepository {
       commandId: cmdId,
       sequenceNumber: _sequenceCounter++,
       timestamp: DateTime.now().millisecondsSinceEpoch,
-      payload: payload,
-      crc: ProtocolValidator.calculateChecksum(payload),
+      payload: finalPayload,
+      crc: ProtocolValidator.calculateChecksum(finalPayload),
     );
 
     final bytes = _codec.encode(packet);

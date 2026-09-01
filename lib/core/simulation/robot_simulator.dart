@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import '../../features/manual_control/domain/models/command_log_entry.dart';
 import '../../shared/models/robot_status.dart';
 import 'package:flutter/material.dart';
@@ -34,8 +34,11 @@ class RobotSimulator {
 
   Future<void> sendCommand(String command, Map<String, dynamic> payload) async {
     await Future.delayed(const Duration(milliseconds: 200));
+    final now = DateTime.now();
+    final timeStr =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
     _logController.add(CommandLogEntry(
-      timestamp: TimeOfDay.now().format(_DummyContext()),
+      timestamp: timeStr,
       command: command,
       source: 'Operator',
       status: 'Success',
@@ -49,9 +52,4 @@ class RobotSimulator {
     _statusController.close();
     _logController.close();
   }
-}
-
-class _DummyContext extends BuildContext {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
