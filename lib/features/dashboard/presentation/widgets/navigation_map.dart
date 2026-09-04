@@ -103,7 +103,7 @@ class _MapPainter extends CustomPainter {
       canvas.drawPath(activePath, paintActiveLine);
 
       // Draw Robot
-      final paintRobot = Paint()..color = AppColors.secondary;
+      final paintRobot = Paint()..color = AppColors.primary;
       canvas.drawCircle(currentPos, 8, paintRobot);
     }
 

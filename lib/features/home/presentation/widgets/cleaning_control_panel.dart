@@ -6,15 +6,28 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/providers/di_providers.dart';
 import '../../../auto_cleaning/domain/models/cleaning_profile.dart';
 import '../../../vision/domain/models/dirt_severity.dart';
-
-enum CleaningIntensity { normal, medium, hard }
+import 'routine_selector_card.dart';
 
 class CleaningControlPanel extends ConsumerStatefulWidget {
   final bool isReady;
+  
+  // Passed down for blocking-reason strip inside RoutineSelectorCard
+  final bool isConnected;
+  final bool isCalibrated;
+  final bool isEStop;
+  final bool markerDetected;
+  final bool alignmentReady;
+  final bool cameraAvailable;
 
   const CleaningControlPanel({
     super.key,
     required this.isReady,
+    this.isConnected = true,
+    this.isCalibrated = true,
+    this.isEStop = false,
+    this.markerDetected = true,
+    this.alignmentReady = true,
+    this.cameraAvailable = true,
   });
 
   @override
@@ -23,42 +36,21 @@ class CleaningControlPanel extends ConsumerStatefulWidget {
 }
 
 class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
-  CleaningIntensity _selectedIntensity = CleaningIntensity.normal;
   bool _isRunning = false;
 
   void _handleStart() async {
     if (!widget.isReady) return;
     setState(() => _isRunning = true);
-    CleaningProfile profile;
-    switch (_selectedIntensity) {
-      case CleaningIntensity.normal:
-        profile = const CleaningProfile(
-          severity: DirtSeverity.light,
-          waterVolumeMl: 100,
-          pumpDurationMs: 2000,
-          brushDurationMs: 5000,
-          routineId: 'routine_normal',
-        );
-        break;
-      case CleaningIntensity.medium:
-        profile = const CleaningProfile(
-          severity: DirtSeverity.moderate,
-          waterVolumeMl: 250,
-          pumpDurationMs: 4000,
-          brushDurationMs: 8000,
-          routineId: 'routine_medium',
-        );
-        break;
-      case CleaningIntensity.hard:
-        profile = const CleaningProfile(
-          severity: DirtSeverity.severe,
-          waterVolumeMl: 400,
-          pumpDurationMs: 6000,
-          brushDurationMs: 12000,
-          routineId: 'routine_hard',
-        );
-        break;
-    }
+    
+    // Defaulting to a standard profile since AI dirt detection is shelved.
+    const profile = CleaningProfile(
+      severity: DirtSeverity.light,
+      waterVolumeMl: 250,
+      pumpDurationMs: 4000,
+      brushDurationMs: 8000,
+      routineId: 'selected_routine', 
+    );
+    
     final repo = ref.read(robotRepositoryProvider);
     await repo.startCleaningWithProfile(profile);
   }
@@ -77,44 +69,34 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.cardGlass,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Mode label ──
-          Text(
-            'CLEANING MODE',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-            ),
-            textAlign: TextAlign.center,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Routine Selector ──
+        Expanded(
+          child: RoutineSelectorCard(
+            isReady: widget.isReady,
+            isConnected: widget.isConnected,
+            isCalibrated: widget.isCalibrated,
+            isEStop: widget.isEStop,
+            markerDetected: widget.markerDetected,
+            alignmentReady: widget.alignmentReady,
+            cameraAvailable: widget.cameraAvailable,
           ),
-          const SizedBox(height: AppSpacing.sm),
+        ),
+        
+        const SizedBox(height: AppSpacing.md),
 
-          // ── Intensity Selectors ──
-          Row(
-            children: [
-              Expanded(child: _buildIntensityButton(CleaningIntensity.normal, 'Normal', Icons.water_drop_outlined)),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(child: _buildIntensityButton(CleaningIntensity.medium, 'Medium', Icons.water_drop)),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(child: _buildIntensityButton(CleaningIntensity.hard, 'Hard', Icons.warning_amber_rounded)),
-            ],
+        // ── Action Buttons ──
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.cardGlass,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.borderLight),
           ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Action Buttons ──
-          Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionButton(
@@ -137,54 +119,8 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIntensityButton(
-      CleaningIntensity intensity, String label, IconData icon) {
-    final isSelected = _selectedIntensity == intensity;
-    return GestureDetector(
-      onTap: () {
-        if (!_isRunning) setState(() => _selectedIntensity = intensity);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.12)
-              : AppColors.backgroundLight,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderLight,
-            width: isSelected ? 2 : 1,
-          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              size: 22,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTextStyles.bodySmall.copyWith(
-                color:
-                    isSelected ? AppColors.primary : AppColors.textSecondary,
-                fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 11,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -202,8 +138,8 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
           onTap: onPressed,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 52,
-            height: 52,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isDisabled
@@ -216,18 +152,18 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
             ),
             child: Icon(
               icon,
-              size: 26,
+              size: 28,
               color: isDisabled ? AppColors.textMuted : color,
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           label,
           style: AppTextStyles.bodySmall.copyWith(
             color: isDisabled ? AppColors.textMuted : color,
             fontWeight: FontWeight.w700,
-            fontSize: 10,
+            fontSize: 11,
           ),
         ),
       ],

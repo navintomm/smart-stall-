@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -36,7 +36,7 @@ class DashboardAppBar extends StatelessWidget {
               const StatusChip(label: 'Connected', color: AppColors.successGreen),
               const SizedBox(width: AppSpacing.sm),
               GlassIconButton(
-                icon: const Icon(Icons.developer_board, color: AppColors.secondary),
+                icon: const Icon(Icons.developer_board, color: AppColors.primary),
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const DeveloperDashboardScreen()));
                 },

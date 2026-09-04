@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_shadows.dart';
 
 /// HUD overlay displayed on top of the live camera feed on the Home screen.
 /// Shows: Marker ID, Distance, Alignment Score, Camera Status, Robot Status.
@@ -67,12 +68,13 @@ class HomeHudOverlay extends StatelessWidget {
                   vertical: AppSpacing.lg,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.dangerRed.withOpacity(0.2),
+                  color: AppColors.cardGlass.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: AppColors.dangerRed,
                     width: 2,
                   ),
+                  boxShadow: AppShadows.glowingRed,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -115,14 +117,15 @@ class HomeHudOverlay extends StatelessWidget {
               vertical: AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.4),
+              color: AppColors.cardGlass.withOpacity(0.95),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: markerId != null
                     ? AppColors.successGreen.withOpacity(0.5)
-                    : Colors.white12,
+                    : AppColors.borderLight,
                 width: 1,
               ),
+              boxShadow: AppShadows.cardShadow,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,13 +137,13 @@ class HomeHudOverlay extends StatelessWidget {
                     Text(
                       'MARKER ID',
                       style: AppTextStyles.bodySmall
-                          .copyWith(color: Colors.white38, letterSpacing: 1.2),
+                          .copyWith(color: AppColors.textSecondary, letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       markerId != null ? '#$markerId' : '—',
                       style: AppTextStyles.titleLarge
-                          .copyWith(color: Colors.white, fontSize: 22),
+                          .copyWith(color: AppColors.text, fontSize: 22),
                     ),
                     if (semanticName != null && markerId != null)
                       Text(
@@ -152,7 +155,7 @@ class HomeHudOverlay extends StatelessWidget {
                 ),
 
                 // Divider
-                Container(width: 1, height: 36, color: Colors.white12),
+                Container(width: 1, height: 36, color: AppColors.borderLight),
 
                 // Distance
                 Column(
@@ -161,7 +164,7 @@ class HomeHudOverlay extends StatelessWidget {
                     Text(
                       'DISTANCE',
                       style: AppTextStyles.bodySmall
-                          .copyWith(color: Colors.white38, letterSpacing: 1.2),
+                          .copyWith(color: AppColors.textSecondary, letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -169,7 +172,7 @@ class HomeHudOverlay extends StatelessWidget {
                       style: AppTextStyles.titleLarge.copyWith(
                         color: markerId != null
                             ? AppColors.successGreen
-                            : Colors.white54,
+                            : AppColors.textSecondary,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -178,7 +181,7 @@ class HomeHudOverlay extends StatelessWidget {
                 ),
 
                 // Divider
-                Container(width: 1, height: 36, color: Colors.white12),
+                Container(width: 1, height: 36, color: AppColors.borderLight),
 
                 // Alignment
                 Column(
@@ -187,7 +190,7 @@ class HomeHudOverlay extends StatelessWidget {
                     Text(
                       'ALIGNMENT',
                       style: AppTextStyles.bodySmall
-                          .copyWith(color: Colors.white38, letterSpacing: 1.2),
+                          .copyWith(color: AppColors.textSecondary, letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -227,9 +230,10 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: AppColors.cardGlass.withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12, width: 1),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: AppShadows.cardShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -243,7 +247,7 @@ class _StatusPill extends StatelessWidget {
           Text(
             '$label: $value',
             style: AppTextStyles.bodySmall
-                .copyWith(color: Colors.white70, fontWeight: FontWeight.w600),
+                .copyWith(color: AppColors.text, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -261,28 +265,27 @@ class _AlignmentBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isGood
-            ? AppColors.successGreen.withOpacity(0.15)
-            : Colors.black.withOpacity(0.4),
+        color: AppColors.cardGlass.withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isGood ? AppColors.successGreen.withOpacity(0.5) : Colors.white12,
+          color: isGood ? AppColors.successGreen.withOpacity(0.5) : AppColors.borderLight,
           width: 1,
         ),
+        boxShadow: AppShadows.cardShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             isGood ? Icons.check_circle_rounded : Icons.adjust_rounded,
-            color: isGood ? AppColors.successGreen : Colors.white54,
+            color: isGood ? AppColors.successGreen : AppColors.warningOrange,
             size: 14,
           ),
           const SizedBox(width: 5),
           Text(
             '${(score * 100).toStringAsFixed(0)}%',
             style: AppTextStyles.bodySmall.copyWith(
-              color: isGood ? AppColors.successGreen : Colors.white70,
+              color: isGood ? AppColors.successGreen : AppColors.text,
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -37,15 +37,15 @@ class EmergencyStopPanel extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(100),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: AppSpacing.xl),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(AppIcons.warning, color: Colors.white, size: 36),
-                const SizedBox(width: AppSpacing.md),
+                const Icon(AppIcons.warning, color: Colors.white, size: 24),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   'EMERGENCY STOP',
-                  style: AppTextStyles.displayMedium.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.titleLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

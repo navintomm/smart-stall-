@@ -3,24 +3,24 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
-  // Display Hero (36-40px, DM Serif Display, Regular)
-  static TextStyle get displayLarge => GoogleFonts.dmSerifDisplay(
+  // Display Hero (36-40px, Inter, Light)
+  static TextStyle get displayLarge => GoogleFonts.inter(
         fontSize: 36,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w300,
         color: AppColors.text,
       );
 
-  // Screen Title / Section Title (28-30px, DM Serif Display, Regular)
-  static TextStyle get displayMedium => GoogleFonts.dmSerifDisplay(
+  // Screen Title / Section Title (28-30px, Inter, Light/Regular)
+  static TextStyle get displayMedium => GoogleFonts.inter(
         fontSize: 28,
         fontWeight: FontWeight.w400,
         color: AppColors.text,
       );
       
-  // Card Title (20-22px, Inter, SemiBold)
+  // Card Title (20-22px, Inter, Medium)
   static TextStyle get titleLarge => GoogleFonts.inter(
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: AppColors.text,
       );
 

@@ -29,7 +29,7 @@ class GradientButton extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: AppRadius.extraLargeRadius,
-            color: AppColors.secondary,
+            color: AppColors.primary,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.15),

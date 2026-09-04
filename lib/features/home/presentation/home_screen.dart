@@ -143,9 +143,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: Row(
           children: [
-            // ── LEFT PANEL: Camera (flex: 7) ────────────────────────────────────
+            // ── LEFT PANEL: Camera (flex: 65) ────────────────────────────────────
             Expanded(
-              flex: 7,
+              flex: 65,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(32),
@@ -218,9 +218,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── RIGHT PANEL: Action & Status (flex: 3) ─────────────────────────
+            // ── RIGHT PANEL: Action & Status (flex: 35) ─────────────────────────
             Expanded(
-              flex: 3,
+              flex: 35,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
@@ -269,6 +269,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Expanded(
                       child: CleaningControlPanel(
                         isReady: isReady,
+                        isConnected: isConnected,
+                        isCalibrated: isCalibrated,
+                        isEStop: isEStop,
+                        markerDetected: markerDetected,
+                        alignmentReady: alignmentReady,
+                        cameraAvailable: cameraAvailable,
                       ),
                     ),
                   ],

@@ -23,10 +23,11 @@ class ManualControlPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        toolbarHeight: 40,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text, size: 20),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -42,23 +43,23 @@ class ManualControlPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.dangerRed.withOpacity(0.08),
                   borderRadius: AppRadius.mediumRadius,
                   border: Border.all(color: AppColors.dangerRed.withOpacity(0.35)),
                 ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(AppIcons.warning, color: AppColors.dangerRed, size: 18),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        'Maintenance & Testing Mode — for authorised technicians only.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.dangerRed,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const Icon(AppIcons.warning, color: AppColors.dangerRed, size: 14),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Maintenance & Testing Mode — for authorised technicians only.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.dangerRed,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -112,9 +113,9 @@ class ManualControlPage extends ConsumerWidget {
                               'Movement Control',
                               style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                             ),
-                            const SizedBox(height: AppSpacing.xxl),
+                            const SizedBox(height: AppSpacing.md),
                             JoystickController(
-                              size: 240,
+                              size: 160,
                               onDirectionChanged: (offset) {},
                             ),
                           ],
@@ -130,32 +131,36 @@ class ManualControlPage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: AppColors.borderLight, width: 1.5),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: AppColors.borderLight, width: 1.5),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text('Joint Control', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                                    ...state.servos.map((s) => Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 4.0, top: 4.0),
+                                        child: ServoSliderCard(servo: s),
+                                      ),
+                                    )),
+                                    
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text('Active Tools', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                                    ...state.tools.map((t) => Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 4.0, top: 4.0),
+                                        child: ToolControlCard(tool: t),
+                                      ),
+                                    )),
+                                  ],
+                                ),
                               ),
-                              child: ListView(
-                                children: [
-                                  Text('Joint Control', style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                                  const SizedBox(height: AppSpacing.md),
-                                  ...state.servos.map((s) => Padding(
-                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                                    child: ServoSliderCard(servo: s),
-                                  )),
-                                  
-                                  const SizedBox(height: AppSpacing.lg),
-                                  Text('Active Tools', style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                                  const SizedBox(height: AppSpacing.md),
-                                  ...state.tools.map((t) => Padding(
-                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                                    child: ToolControlCard(tool: t),
-                                  )),
-                                ],
-                              ),
-                            ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           const EmergencyStopPanel(),

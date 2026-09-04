@@ -11,7 +11,6 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
         surface: AppColors.backgroundLight,
       ),
       textTheme: TextTheme(
@@ -20,10 +19,14 @@ class AppTheme {
         bodyMedium: AppTextStyles.bodyMedium,
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
-      cardTheme: const CardTheme(
+      cardTheme: CardTheme(
         elevation: 0,
         color: AppColors.cardGlass,
         margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.borderLight, width: 1),
+        ),
       ),
     );
   }

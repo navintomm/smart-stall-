@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../domain/models/servo_control.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -14,24 +14,29 @@ class ServoSliderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(servo.name, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-                Text("${servo.currentAngle.toStringAsFixed(1)}°", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary)),
+                Text(servo.name, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                Text("${servo.currentAngle.toStringAsFixed(1)}°", style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
               ],
             ),
-            Slider(
-              value: servo.currentAngle,
-              min: servo.minAngle,
-              max: servo.maxAngle,
-              activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withOpacity(0.2),
-              onChanged: (val) {},
+            SizedBox(
+              height: 24,
+              child: Slider(
+                value: servo.currentAngle,
+                min: servo.minAngle,
+                max: servo.maxAngle,
+                activeColor: AppColors.primary,
+                inactiveColor: AppColors.primary.withOpacity(0.2),
+                onChanged: (val) {},
+              ),
             ),
           ],
         ),
