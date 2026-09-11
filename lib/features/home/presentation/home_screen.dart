@@ -170,8 +170,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           activePoseDistance: distanceUnknown ? null : alignmentState.distanceErrorM,
                           activeAlignmentScore: alignmentScore,
                           imageSize: Size(
-                            _cameraController!.value.previewSize!.height, // Assuming rotated sensor (width/height flipped)
                             _cameraController!.value.previewSize!.width,
+                            _cameraController!.value.previewSize!.height,
                           ),
                         ),
                       ),
@@ -336,9 +336,12 @@ class _MarkerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (detections.isEmpty) return;
     
-    // Using the transposition mapping (y -> x, width - x -> y) which is common for portrait-native sensors in landscape mode.
-    final scaleX = size.width / imageSize.height;
-    final scaleY = size.height / imageSize.width;
+    final double sensorWidth = imageSize.width; // e.g. 1920
+    final double sensorHeight = imageSize.height; // e.g. 1080
+
+    // For portrait UI with a landscape sensor, we map sensorHeight to UI width, and sensorWidth to UI height.
+    final scaleX = size.width / sensorHeight;
+    final scaleY = size.height / sensorWidth;
 
     for (final detection in detections) {
       if (!detection.isValid) continue;
@@ -351,12 +354,26 @@ class _MarkerPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = isActive ? 4.0 : 2.0;
 
+      // Coordinate mapping for 90-deg CW rotated sensor:
+      // x_ui = y_sensor
+      // y_ui = sensorWidth - x_sensor
+      // If the bounding boxes appear mirrored or flipped, adjust this to:
+      // x_ui = sensorHeight - y_sensor
+      // y_ui = x_sensor
+      double mapX(double x, double y) => y * scaleX;
+      double mapY(double x, double y) => x * scaleY;
+
+      // Many Android devices actually need: x_ui = sensorHeight - y, y_ui = x
+      // Let's use the standard Android rear camera portrait mapping:
+      double standardMapX(double x, double y) => (sensorHeight - y) * scaleX;
+      double standardMapY(double x, double y) => x * scaleY;
+
       final corners = detection.corners;
       final path = Path()
-        ..moveTo(corners[0].y * scaleX, (imageSize.width - corners[0].x) * scaleY)
-        ..lineTo(corners[1].y * scaleX, (imageSize.width - corners[1].x) * scaleY)
-        ..lineTo(corners[2].y * scaleX, (imageSize.width - corners[2].x) * scaleY)
-        ..lineTo(corners[3].y * scaleX, (imageSize.width - corners[3].x) * scaleY)
+        ..moveTo(standardMapX(corners[0].x, corners[0].y), standardMapY(corners[0].x, corners[0].y))
+        ..lineTo(standardMapX(corners[1].x, corners[1].y), standardMapY(corners[1].x, corners[1].y))
+        ..lineTo(standardMapX(corners[2].x, corners[2].y), standardMapY(corners[2].x, corners[2].y))
+        ..lineTo(standardMapX(corners[3].x, corners[3].y), standardMapY(corners[3].x, corners[3].y))
         ..close();
       canvas.drawPath(path, paint);
 
@@ -364,8 +381,8 @@ class _MarkerPainter extends CustomPainter {
       final centerPaint = Paint()
         ..color = Colors.redAccent
         ..style = PaintingStyle.fill;
-      final cx = detection.center.y * scaleX;
-      final cy = (imageSize.width - detection.center.x) * scaleY;
+      final cx = standardMapX(detection.center.x, detection.center.y);
+      final cy = standardMapY(detection.center.x, detection.center.y);
       canvas.drawCircle(Offset(cx, cy), isActive ? 6.0 : 4.0, centerPaint);
 
       // Label background

@@ -43,9 +43,13 @@ class EmergencyStopPanel extends StatelessWidget {
               children: [
                 const Icon(AppIcons.warning, color: Colors.white, size: 24),
                 const SizedBox(width: AppSpacing.sm),
-                Text(
-                  'EMERGENCY STOP',
-                  style: AppTextStyles.titleLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: FittedBox(
+                    child: Text(
+                      'EMERGENCY STOP',
+                      style: AppTextStyles.titleLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
               ],
             ),

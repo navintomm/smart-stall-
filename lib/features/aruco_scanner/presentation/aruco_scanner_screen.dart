@@ -126,8 +126,8 @@ class _ArucoScannerScreenState extends ConsumerState<ArucoScannerScreen> {
                       painter: BoundingBoxPainter(
                         corners: markerCorners,
                         imageSize: Size(
-                          _controller!.value.previewSize!.height,
                           _controller!.value.previewSize!.width,
+                          _controller!.value.previewSize!.height,
                         ),
                         screenSize: MediaQuery.of(context).size,
                       ),
@@ -279,23 +279,34 @@ class BoundingBoxPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0;
 
+    final double sensorWidth = imageSize.width;
+    final double sensorHeight = imageSize.height;
+
     // Scale coordinates from image space to screen space
-    final double scaleX = size.width / imageSize.height; 
-    final double scaleY = size.height / imageSize.width;
+    final double scaleX = size.width / sensorHeight; 
+    final double scaleY = size.height / sensorWidth;
+
+    double standardMapX(double x, double y) => (sensorHeight - y) * scaleX;
+    double standardMapY(double x, double y) => x * scaleY;
 
     final path = Path();
-    // Rotate coordinates for portrait mode (assuming phone is in portrait)
-    path.moveTo(corners[0].y * scaleX, (imageSize.width - corners[0].x) * scaleY);
-    path.lineTo(corners[1].y * scaleX, (imageSize.width - corners[1].x) * scaleY);
-    path.lineTo(corners[2].y * scaleX, (imageSize.width - corners[2].x) * scaleY);
-    path.lineTo(corners[3].y * scaleX, (imageSize.width - corners[3].x) * scaleY);
+    path.moveTo(standardMapX(corners[0].x, corners[0].y), standardMapY(corners[0].x, corners[0].y));
+    path.lineTo(standardMapX(corners[1].x, corners[1].y), standardMapY(corners[1].x, corners[1].y));
+    path.lineTo(standardMapX(corners[2].x, corners[2].y), standardMapY(corners[2].x, corners[2].y));
+    path.lineTo(standardMapX(corners[3].x, corners[3].y), standardMapY(corners[3].x, corners[3].y));
     path.close();
 
     canvas.drawPath(path, paint);
     
-    // Draw 3D axis approximation (center dot for now)
-    final centerX = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4 * scaleX;
-    final centerY = (imageSize.width - (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4) * scaleY;
+    // Draw center dot
+    final centerX = standardMapX(
+      (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4,
+      (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4
+    );
+    final centerY = standardMapY(
+      (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4,
+      (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4
+    );
     
     final centerPaint = Paint()
       ..color = Colors.red

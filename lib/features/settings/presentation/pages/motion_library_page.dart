@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -137,6 +138,8 @@ class _RoutineCard extends ConsumerWidget {
                   _menuItem(_RoutineAction.rename, AppIcons.rename, 'Rename'),
                   _menuItem(
                       _RoutineAction.duplicate, AppIcons.duplicate, 'Duplicate'),
+                  _menuItem(
+                      _RoutineAction.developerPreview, Icons.developer_mode, 'Developer Preview'),
                   if (!isDefault)
                     _menuItem(_RoutineAction.setDefault, AppIcons.defaultRoutine,
                         'Set as Default'),
@@ -208,10 +211,112 @@ class _RoutineCard extends ConsumerWidget {
           _snackBar('Set as default routine'),
         );
         break;
+      case _RoutineAction.developerPreview:
+        _showDeveloperPreview(context);
+        break;
       case _RoutineAction.delete:
         _showDeleteConfirm(context, notifier);
         break;
     }
+  }
+
+  void _showDeveloperPreview(BuildContext context) {
+    double s1Min = double.infinity, s1Max = double.negativeInfinity;
+    double s2Min = double.infinity, s2Max = double.negativeInfinity;
+    int uniqueCount = 0;
+    String lastUnique = '';
+    
+    for (var f in routine.frames) {
+      final s1 = f.servoAngles['s1'] ?? 0.0;
+      final s2 = f.servoAngles['s2'] ?? 0.0;
+      if (s1 < s1Min) s1Min = s1;
+      if (s1 > s1Max) s1Max = s1;
+      if (s2 < s2Min) s2Min = s2;
+      if (s2 > s2Max) s2Max = s2;
+      
+      final currentUnique = '${s1.toStringAsFixed(1)}_${s2.toStringAsFixed(1)}';
+      if (currentUnique != lastUnique) {
+        uniqueCount++;
+        lastUnique = currentUnique;
+      }
+    }
+    
+    if (s1Min == double.infinity) s1Min = 0.0;
+    if (s1Max == double.negativeInfinity) s1Max = 0.0;
+    if (s2Min == double.infinity) s2Min = 0.0;
+    if (s2Max == double.negativeInfinity) s2Max = 0.0;
+
+    final durationSecs = routine.durationMs / 1000.0;
+    final observedRate = durationSecs > 0 ? (routine.frames.length / durationSecs) : 0.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Developer Preview: ${routine.name}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Duration: ${routine.durationMs} ms', style: AppTextStyles.bodySmall),
+              Text('Sample count: ${routine.frames.length}', style: AppTextStyles.bodySmall),
+              Text('Unique sample count: $uniqueCount', style: AppTextStyles.bodySmall),
+              Text('Target sampling rate: 20 Hz', style: AppTextStyles.bodySmall),
+              Text('Observed sampling rate: ${observedRate.toStringAsFixed(1)} Hz', style: AppTextStyles.bodySmall),
+              const SizedBox(height: 8),
+              Text('Servo 1: min ${s1Min.toStringAsFixed(1)}°, max ${s1Max.toStringAsFixed(1)}°', style: AppTextStyles.bodySmall),
+              Text('Servo 2: min ${s2Min.toStringAsFixed(1)}°, max ${s2Max.toStringAsFixed(1)}°', style: AppTextStyles.bodySmall),
+              const Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: DataTable(
+                    columnSpacing: 16,
+                    columns: const [
+                      DataColumn(label: Text('Time(ms)')),
+                      DataColumn(label: Text('Servo1')),
+                      DataColumn(label: Text('Servo2')),
+                    ],
+                    rows: routine.frames.map((f) {
+                      final s1 = f.servoAngles['s1'] ?? 0.0;
+                      final s2 = f.servoAngles['s2'] ?? 0.0;
+                      return DataRow(cells: [
+                        DataCell(Text(f.timestampMs.toString())),
+                        DataCell(Text(s1.toStringAsFixed(1))),
+                        DataCell(Text(s2.toStringAsFixed(1))),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Copy to clipboard (CSV format)
+              final buffer = StringBuffer();
+              buffer.writeln('timestamp_ms,servo1_angle,servo2_angle');
+              for (var f in routine.frames) {
+                final s1 = f.servoAngles['s1'] ?? 0.0;
+                final s2 = f.servoAngles['s2'] ?? 0.0;
+                buffer.writeln('${f.timestampMs},${s1.toStringAsFixed(4)},${s2.toStringAsFixed(4)}');
+              }
+              Clipboard.setData(ClipboardData(text: buffer.toString()));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('CSV copied to clipboard')),
+              );
+            },
+            child: const Text('Copy CSV'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPreview(BuildContext context) {
@@ -295,7 +400,7 @@ class _RoutineCard extends ConsumerWidget {
       '${dt.day}/${dt.month}/${dt.year}';
 }
 
-enum _RoutineAction { preview, rename, duplicate, setDefault, delete }
+enum _RoutineAction { preview, rename, duplicate, developerPreview, setDefault, delete }
 
 // ─── Action Button ────────────────────────────────────────────────────────────
 class _ActionButton extends StatelessWidget {

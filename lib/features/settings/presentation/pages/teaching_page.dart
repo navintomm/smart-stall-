@@ -9,8 +9,9 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../features/manual_control/presentation/widgets/joystick_controller.dart';
 import '../../../../features/manual_control/presentation/providers/manual_control_provider.dart';
-import '../providers/routine_recording_provider.dart';
-import '../../domain/models/routine_recording_state.dart';
+import '../providers/trajectory_recording_provider.dart';
+import '../../domain/models/trajectory_recording_state.dart';
+import '../../../../core/providers/app_config_provider.dart';
 
 class TeachingPage extends ConsumerStatefulWidget {
   const TeachingPage({super.key});
@@ -141,14 +142,14 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
         actions: [
           TextButton(
             onPressed: () {
-              ref.read(routineRecordingProvider.notifier).discardRecording();
+              ref.read(trajectoryRecordingProvider.notifier).discardRecording();
               Navigator.pop(ctx);
             },
             child: Text('Discard', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dangerRed)),
           ),
           ElevatedButton(
             onPressed: () {
-              ref.read(routineRecordingProvider.notifier).saveAsRoutine(controller.text);
+              ref.read(trajectoryRecordingProvider.notifier).saveAsRoutine(controller.text);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -173,7 +174,7 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final recordState = ref.watch(routineRecordingProvider);
+    final recordState = ref.watch(trajectoryRecordingProvider);
 
     // Trigger save dialog when recording stops
     if (recordState.status == RecordingStatus.saving) {
@@ -196,6 +197,34 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
           style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          Consumer(
+            builder: (context, ref, child) {
+              final isSimulation = ref.watch(appConfigProvider).isSimulationMode;
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.md),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSimulation ? AppColors.warningOrange.withOpacity(0.2) : AppColors.successGreen.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: isSimulation ? AppColors.warningOrange : AppColors.successGreen),
+                    ),
+                    child: Text(
+                      isSimulation ? 'SIMULATION' : 'HARDWARE',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: isSimulation ? AppColors.warningOrange : AppColors.successGreen,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -315,7 +344,7 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                         isDisabled: recordState.isRecording,
                         onTap: recordState.isRecording
                             ? null
-                            : () => ref.read(routineRecordingProvider.notifier).startRecording(),
+                            : () => ref.read(trajectoryRecordingProvider.notifier).startRecording(),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -328,7 +357,7 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                         isDisabled: !recordState.isRecording,
                         onTap: !recordState.isRecording
                             ? null
-                            : () => ref.read(routineRecordingProvider.notifier).stopRecording(),
+                            : () => ref.read(trajectoryRecordingProvider.notifier).stopRecording(),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -369,7 +398,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _RecordingStatusCard extends StatelessWidget {
-  final RoutineRecordingState state;
+  final TrajectoryRecordingState state;
   const _RecordingStatusCard({required this.state});
 
   String get _elapsedFormatted {
@@ -382,6 +411,9 @@ class _RecordingStatusCard extends StatelessWidget {
     if (state.isIdle) return const SizedBox.shrink();
     final isRecording = state.isRecording;
     final color = isRecording ? AppColors.dangerRed : AppColors.warningOrange;
+
+    final servo1 = state.samples.isNotEmpty ? state.samples.last.servo1Angle : 0.0;
+    final servo2 = state.samples.isNotEmpty ? state.samples.last.servo2Angle : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -403,9 +435,17 @@ class _RecordingStatusCard extends StatelessWidget {
                   style: AppTextStyles.bodyMedium.copyWith(color: color, fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  '${state.frames.length} frames · $_elapsedFormatted',
+                  '${state.samples.length} samples · $_elapsedFormatted',
                   style: AppTextStyles.bodySmall,
                 ),
+                if (isRecording && state.samples.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      'S1: ${servo1.toStringAsFixed(1)}° | S2: ${servo2.toStringAsFixed(1)}°',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
               ],
             ),
           ),

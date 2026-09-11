@@ -27,15 +27,21 @@ class ServoSliderCard extends StatelessWidget {
                 Text("${servo.currentAngle.toStringAsFixed(1)}°", style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
               ],
             ),
-            SizedBox(
-              height: 24,
-              child: Slider(
-                value: servo.currentAngle,
-                min: servo.minAngle,
-                max: servo.maxAngle,
-                activeColor: AppColors.primary,
-                inactiveColor: AppColors.primary.withOpacity(0.2),
-                onChanged: (val) {},
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 4.0,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+                ),
+                child: Slider(
+                  value: servo.currentAngle,
+                  min: servo.minAngle,
+                  max: servo.maxAngle,
+                  activeColor: AppColors.primary,
+                  inactiveColor: AppColors.primary.withOpacity(0.2),
+                  onChanged: (val) {},
+                ),
               ),
             ),
           ],
