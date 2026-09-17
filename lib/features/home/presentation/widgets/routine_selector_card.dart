@@ -21,6 +21,8 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
   final bool markerDetected;
   final bool alignmentReady;
   final bool cameraAvailable;
+  final String? selectedRoutineId;
+  final ValueChanged<String?>? onRoutineChanged;
 
   const RoutineSelectorCard({
     super.key,
@@ -32,6 +34,8 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
     this.markerDetected = true,
     this.alignmentReady = true,
     this.cameraAvailable = true,
+    this.selectedRoutineId,
+    this.onRoutineChanged,
   });
 
   @override
@@ -39,23 +43,12 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
 }
 
 class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
-  String? _selectedRoutineId;
-
   @override
   Widget build(BuildContext context) {
     final libraryState = ref.watch(motionLibraryProvider);
     final routines = libraryState.routines;
 
-    // Ensure selection stays valid
-    if (_selectedRoutineId == null && libraryState.defaultRoutineId != null) {
-      _selectedRoutineId = libraryState.defaultRoutineId;
-    }
-    if (_selectedRoutineId != null &&
-        routines.every((r) => r.id != _selectedRoutineId)) {
-      _selectedRoutineId = routines.isEmpty ? null : routines.first.id;
-    }
-
-    final canStart = widget.isReady && _selectedRoutineId != null;
+    final canStart = widget.isReady && widget.selectedRoutineId != null;
 
     return SurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -102,12 +95,12 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _selectedRoutineId,
+                  value: widget.selectedRoutineId,
                   isExpanded: true,
                   style: AppTextStyles.bodyLarge,
                   icon: const Icon(Icons.expand_more_rounded,
                       color: AppColors.primary),
-                  onChanged: (id) => setState(() => _selectedRoutineId = id),
+                  onChanged: widget.onRoutineChanged,
                   items: routines
                       .map((r) => DropdownMenuItem(
                             value: r.id,
@@ -139,7 +132,7 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
           const SizedBox(height: AppSpacing.lg),
 
           // Blocking-reason strip — only visible when Start is disabled
-          if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: _selectedRoutineId != null),
+          if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: widget.selectedRoutineId != null),
           if (!canStart) const SizedBox(height: AppSpacing.sm),
 
         ],

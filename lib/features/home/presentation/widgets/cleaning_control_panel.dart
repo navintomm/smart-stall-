@@ -6,6 +6,9 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/providers/di_providers.dart';
 import '../../../auto_cleaning/domain/models/cleaning_profile.dart';
 import '../../../vision/domain/models/dirt_severity.dart';
+import '../../../settings/domain/models/routine.dart';
+import '../../../settings/presentation/providers/motion_library_provider.dart';
+import '../../../auto_cleaning/presentation/providers/routine_playback_provider.dart';
 import 'routine_selector_card.dart';
 
 class CleaningControlPanel extends ConsumerStatefulWidget {
@@ -36,19 +39,44 @@ class CleaningControlPanel extends ConsumerStatefulWidget {
 }
 
 class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
-  bool _isRunning = false;
+  String? _selectedRoutineId;
+
+  @override
+  void didUpdateWidget(covariant CleaningControlPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Auto-pause if alignment is lost while playing
+    if (oldWidget.alignmentReady && !widget.alignmentReady) {
+      final playbackState = ref.read(routinePlaybackProvider);
+      if (playbackState.status == PlaybackStatus.playing) {
+        _handlePause();
+      }
+    }
+  }
 
   void _handleStart() async {
     if (!widget.isReady) return;
-    setState(() => _isRunning = true);
+    if (_selectedRoutineId == null) return;
+    
+    final libraryState = ref.read(motionLibraryProvider);
+    Routine? routine;
+    for (final r in libraryState.routines) {
+      if (r.id == _selectedRoutineId) {
+        routine = r;
+        break;
+      }
+    }
+
+    if (routine != null) {
+      ref.read(routinePlaybackProvider.notifier).start(routine);
+    }
     
     // Defaulting to a standard profile since AI dirt detection is shelved.
-    const profile = CleaningProfile(
+    final profile = CleaningProfile(
       severity: DirtSeverity.light,
       waterVolumeMl: 250,
       pumpDurationMs: 4000,
       brushDurationMs: 8000,
-      routineId: 'selected_routine', 
+      routineId: _selectedRoutineId!, 
     );
     
     final repo = ref.read(robotRepositoryProvider);
@@ -56,19 +84,44 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
   }
 
   void _handlePause() async {
+    ref.read(routinePlaybackProvider.notifier).pause();
     final repo = ref.read(robotRepositoryProvider);
     await repo.pauseCleaning();
-    setState(() => _isRunning = false);
   }
 
   void _handleStop() async {
+    ref.read(routinePlaybackProvider.notifier).stop();
     final repo = ref.read(robotRepositoryProvider);
     await repo.stopCleaning();
-    setState(() => _isRunning = false);
+  }
+
+  void _handleResume() async {
+    ref.read(routinePlaybackProvider.notifier).resume();
+    final repo = ref.read(robotRepositoryProvider);
+    await repo.resumeCleaning();
   }
 
   @override
   Widget build(BuildContext context) {
+    final libraryState = ref.watch(motionLibraryProvider);
+    final routines = libraryState.routines;
+    final playbackState = ref.watch(routinePlaybackProvider);
+    final isRunning = playbackState.status == PlaybackStatus.playing;
+
+    // Ensure selection stays valid
+    if (_selectedRoutineId == null && libraryState.defaultRoutineId != null) {
+      _selectedRoutineId = libraryState.defaultRoutineId;
+    }
+    if (_selectedRoutineId != null &&
+        routines.every((r) => r.id != _selectedRoutineId)) {
+      _selectedRoutineId = routines.isEmpty ? null : routines.first.id;
+    }
+
+    final isStartEnabled = widget.isReady && !isRunning && _selectedRoutineId != null;
+    final isPauseEnabled = isRunning;
+    final canResume = widget.isReady && playbackState.status == PlaybackStatus.paused;
+    final isStopEnabled = playbackState.status != PlaybackStatus.idle && playbackState.status != PlaybackStatus.completed;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,6 +136,12 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
             markerDetected: widget.markerDetected,
             alignmentReady: widget.alignmentReady,
             cameraAvailable: widget.cameraAvailable,
+            selectedRoutineId: _selectedRoutineId,
+            onRoutineChanged: (id) {
+              if (id != null) {
+                setState(() => _selectedRoutineId = id);
+              }
+            },
           ),
         ),
         
@@ -102,20 +161,20 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
               _buildActionButton(
                 icon: Icons.stop_rounded,
                 color: AppColors.dangerRed,
-                onPressed: _isRunning ? _handleStop : null,
+                onPressed: isStopEnabled ? _handleStop : null,
                 label: 'STOP',
               ),
               _buildActionButton(
                 icon: Icons.pause_rounded,
                 color: AppColors.warningOrange,
-                onPressed: _isRunning ? _handlePause : null,
+                onPressed: isPauseEnabled ? _handlePause : null,
                 label: 'PAUSE',
               ),
               _buildActionButton(
                 icon: Icons.play_arrow_rounded,
                 color: AppColors.successGreen,
-                onPressed: (widget.isReady && !_isRunning) ? _handleStart : null,
-                label: 'START',
+                onPressed: isStartEnabled ? _handleStart : (canResume ? _handleResume : null),
+                label: playbackState.status == PlaybackStatus.paused ? 'RESUME' : 'START',
               ),
             ],
           ),

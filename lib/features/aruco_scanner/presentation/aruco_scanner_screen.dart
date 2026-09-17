@@ -122,14 +122,11 @@ class _ArucoScannerScreenState extends ConsumerState<ArucoScannerScreen> {
                 children: [
                   CameraPreview(_controller!),
                   if (markerCorners.length == 4)
-                    CustomPaint(
+                      CustomPaint(
                       painter: BoundingBoxPainter(
                         corners: markerCorners,
-                        imageSize: Size(
-                          _controller!.value.previewSize!.width,
-                          _controller!.value.previewSize!.height,
-                        ),
-                        screenSize: MediaQuery.of(context).size,
+                        imageWidth: visionState.frameWidth.toDouble(),
+                        imageHeight: visionState.frameHeight.toDouble(),
                       ),
                     ),
                   
@@ -274,13 +271,13 @@ class _ArucoScannerScreenState extends ConsumerState<ArucoScannerScreen> {
 
 class BoundingBoxPainter extends CustomPainter {
   final List<math.Point<double>> corners;
-  final Size imageSize;
-  final Size screenSize;
+  final double imageWidth;
+  final double imageHeight;
 
   BoundingBoxPainter({
     required this.corners,
-    required this.imageSize,
-    required this.screenSize,
+    required this.imageWidth,
+    required this.imageHeight,
   });
 
   @override
@@ -292,39 +289,33 @@ class BoundingBoxPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0;
 
-    final double sensorWidth = imageSize.width;
-    final double sensorHeight = imageSize.height;
+    // The camera image comes from the Y-plane which is (width x height) from
+    // the sensor.  On a landscape Android device the sensor width maps to the
+    // screen width and the sensor height maps to the screen height.
+    final double scaleX = size.width / imageWidth;
+    final double scaleY = size.height / imageHeight;
 
-    // Scale coordinates from image space to screen space
-    final double scaleX = size.width / sensorHeight; 
-    final double scaleY = size.height / sensorWidth;
-
-    double standardMapX(double x, double y) => (sensorHeight - y) * scaleX;
-    double standardMapY(double x, double y) => x * scaleY;
+    Offset mapPoint(math.Point<double> p) =>
+        Offset(p.x * scaleX, p.y * scaleY);
 
     final path = Path();
-    path.moveTo(standardMapX(corners[0].x, corners[0].y), standardMapY(corners[0].x, corners[0].y));
-    path.lineTo(standardMapX(corners[1].x, corners[1].y), standardMapY(corners[1].x, corners[1].y));
-    path.lineTo(standardMapX(corners[2].x, corners[2].y), standardMapY(corners[2].x, corners[2].y));
-    path.lineTo(standardMapX(corners[3].x, corners[3].y), standardMapY(corners[3].x, corners[3].y));
+    path.moveTo(mapPoint(corners[0]).dx, mapPoint(corners[0]).dy);
+    path.lineTo(mapPoint(corners[1]).dx, mapPoint(corners[1]).dy);
+    path.lineTo(mapPoint(corners[2]).dx, mapPoint(corners[2]).dy);
+    path.lineTo(mapPoint(corners[3]).dx, mapPoint(corners[3]).dy);
     path.close();
 
     canvas.drawPath(path, paint);
-    
+
     // Draw center dot
-    final centerX = standardMapX(
-      (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4,
-      (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4
-    );
-    final centerY = standardMapY(
-      (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4,
-      (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4
-    );
-    
+    final cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4;
+    final cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4;
+    final center = Offset(cx * scaleX, cy * scaleY);
+
     final centerPaint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(centerX, centerY), 6.0, centerPaint);
+    canvas.drawCircle(center, 6.0, centerPaint);
   }
 
   @override

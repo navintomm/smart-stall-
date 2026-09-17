@@ -8,6 +8,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/providers/developer_mode_provider.dart';
 import 'providers/global_settings_provider.dart';
+import '../../connection/presentation/providers/bluetooth_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -53,6 +55,14 @@ class SettingsScreen extends ConsumerWidget {
                             title: 'Teaching',
                             subtitle: 'Record cleaning routines',
                             onTap: () => context.push(AppRoutes.teaching),
+                          ),
+                          const Divider(height: 1, indent: 64, color: AppColors.borderLight),
+                          _SettingsTile(
+                            icon: Icons.bluetooth_rounded,
+                            iconColor: Colors.blueAccent,
+                            title: 'Bluetooth',
+                            subtitle: 'Connect to HC-05',
+                            onTap: () => _showBluetoothDialog(context, ref),
                           ),
                           const Divider(height: 1, indent: 64, color: AppColors.borderLight),
                           _SettingsTile(
@@ -176,6 +186,86 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+  
+  void _showBluetoothDialog(BuildContext context, WidgetRef ref) async {
+    // Request runtime Bluetooth permissions (required on Android 12+)
+    final statuses = await [
+      Permission.bluetoothConnect,
+      Permission.bluetoothScan,
+      Permission.locationWhenInUse,
+    ].request();
+
+    final connectGranted = statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+    final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
+
+    if (!connectGranted || !scanGranted) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bluetooth permissions denied. Please grant them in Settings.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Reload devices now that we have permission
+    ref.read(bluetoothProvider.notifier).loadDevices();
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer(builder: (context, ref, child) {
+          final bluetoothState = ref.watch(bluetoothProvider);
+          return AlertDialog(
+            title: const Text('Connect to HC-05'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: bluetoothState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, st) => Center(child: Text('Error: $e')),
+                data: (devices) {
+                  if (devices.isEmpty) {
+                    return const Center(
+                      child: Text('No paired devices found.\nPlease pair HC-05 in Android Bluetooth Settings first.', textAlign: TextAlign.center),
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: devices.length,
+                    itemBuilder: (context, index) {
+                      final device = devices[index];
+                      return ListTile(
+                        leading: const Icon(Icons.bluetooth),
+                        title: Text(device.name ?? 'Unknown Device'),
+                        subtitle: Text(device.address),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connecting...')));
+                          final success = await ref.read(bluetoothProvider.notifier).connect(device.address);
+                          if (success && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connected successfully!'), backgroundColor: Colors.green));
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to connect.'), backgroundColor: Colors.red));
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            ],
+          );
+        });
+      },
     );
   }
 }

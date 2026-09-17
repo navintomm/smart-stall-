@@ -1,16 +1,17 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/manual_control_state.dart';
 import '../../domain/models/servo_control.dart';
 import '../../domain/models/tool_control.dart';
 import '../../domain/models/sensor_status.dart';
 import '../../domain/models/command_log_entry.dart';
 import '../../../../core/providers/di_providers.dart';
-import '../../../../core/repositories/robot_repository.dart';
+import '../../../connection/presentation/providers/bluetooth_provider.dart';
+import '../../../connection/domain/services/bluetooth_service.dart';
 
 final manualControlProvider = StateNotifierProvider<ManualControlNotifier, ManualControlState>((ref) {
-  final repo = ref.watch(robotRepositoryProvider);
+  final bluetoothService = ref.watch(bluetoothServiceProvider);
     
-  final notifier = ManualControlNotifier(repo);
+  final notifier = ManualControlNotifier(bluetoothService);
 
   ref.listen(robotSimulatorProvider.select((s) => s.logStream), (_, stream) {
     stream.listen((newLog) {
@@ -22,9 +23,9 @@ final manualControlProvider = StateNotifierProvider<ManualControlNotifier, Manua
 });
 
 class ManualControlNotifier extends StateNotifier<ManualControlState> {
-  final RobotRepository repo;
+  final BluetoothService _bluetoothService;
 
-  ManualControlNotifier(this.repo) : super(
+  ManualControlNotifier(this._bluetoothService) : super(
     ManualControlState(
       servos: ServoControl.placeholders,
       tools: ToolControl.placeholders,
@@ -45,7 +46,7 @@ class ManualControlNotifier extends StateNotifier<ManualControlState> {
   }
 
   Future<void> sendCommand(String command) async {
-    await repo.sendCommand(command, {});
+    _bluetoothService.sendCommand(command);
   }
 
   void toggleEmergencyStop() {

@@ -10,6 +10,7 @@ class AlignmentResult {
   final double horizontalErrorM;
   final double verticalErrorM;
   final double distanceErrorM;
+  final double absoluteDistanceM;
   final double yawErrorDeg;
   
   /// 0.0 to 1.0 (1.0 means perfectly aligned within tolerances)
@@ -20,6 +21,7 @@ class AlignmentResult {
     required this.horizontalErrorM,
     required this.verticalErrorM,
     required this.distanceErrorM,
+    required this.absoluteDistanceM,
     required this.yawErrorDeg,
     required this.score,
     required this.status,
@@ -30,6 +32,7 @@ class AlignmentResult {
       horizontalErrorM: 0.0,
       verticalErrorM: 0.0,
       distanceErrorM: 0.0,
+      absoluteDistanceM: 0.0,
       yawErrorDeg: 0.0,
       score: 0.0,
       status: status,

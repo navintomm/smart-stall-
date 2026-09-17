@@ -51,7 +51,11 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
               onPressed: () {
                 setState(() => _speed = tempSpeed);
-                ref.read(manualControlProvider.notifier).sendCommand('SET_SPEED:${(tempSpeed * 100).toStringAsFixed(0)}');
+                // Convert 0.1 - 1.0 to a single digit 0-9
+                int speedDigit = (tempSpeed * 10).toInt() - 1;
+                if(speedDigit < 0) speedDigit = 0;
+                if(speedDigit > 9) speedDigit = 9;
+                ref.read(manualControlProvider.notifier).sendCommand(speedDigit.toString());
                 Navigator.pop(ctx);
               },
               child: const Text('Apply'),
@@ -288,11 +292,11 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                             onDirectionChanged: (offset) {
                               final notifier = ref.read(manualControlProvider.notifier);
                               if (offset.dx.abs() < 0.1 && offset.dy.abs() < 0.1) {
-                                notifier.sendCommand('STOP');
+                                notifier.sendCommand('S'); // Stop
                               } else if (offset.dy.abs() > offset.dx.abs()) {
-                                notifier.sendCommand(offset.dy < 0 ? 'MOVE_FORWARD' : 'MOVE_BACKWARD');
+                                notifier.sendCommand(offset.dy < 0 ? 'F' : 'B'); // Forward/Backward
                               } else {
-                                notifier.sendCommand(offset.dx > 0 ? 'TURN_RIGHT' : 'TURN_LEFT');
+                                notifier.sendCommand(offset.dx > 0 ? 'R' : 'L'); // Right/Left
                               }
                             },
                           ),

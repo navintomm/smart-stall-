@@ -151,7 +151,17 @@ class ArucoVisionWorker {
         ..adaptiveThreshWinSizeStep = 10
         ..minMarkerPerimeterRate = 0.05
         ..maxMarkerPerimeterRate = 4.0
-        ..errorCorrectionRate = 0.6;
+        ..polygonalApproxAccuracyRate = 0.05
+        ..minCornerDistanceRate = 0.05
+        ..minMarkerDistanceRate = 0.05
+        ..markerBorderBits = 1
+        ..minOtsuStdDev = 5.0
+        ..perspectiveRemoveIgnoredMarginPerCell = 0.13
+        ..errorCorrectionRate = 0.6
+        ..cornerRefinementMethod = 1 // CORNER_REFINE_SUBPIX
+        ..cornerRefinementWinSize = 5
+        ..cornerRefinementMaxIterations = 30
+        ..cornerRefinementMinAccuracy = 0.1;
       detector = cv.ArucoDetector.create(dict!, params!);
       detectorInitialized = true;
     }

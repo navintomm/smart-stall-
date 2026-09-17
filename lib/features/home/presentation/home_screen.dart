@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:go_router/go_router.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -37,6 +38,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initCamera() async {
+    if (_cameraController != null) return;
+    
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -65,6 +68,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  void _disposeCamera() {
+    _cameraController?.stopImageStream();
+    _cameraController?.dispose();
+    _cameraController = null;
+    if (mounted) {
+      ref.read(arucoVisionProvider.notifier).setStatus('Paused');
+      setState(() {});
+    }
+  }
+
   void _processFrame(CameraImage image) {
     if (image.planes.isEmpty) return;
     
@@ -85,8 +98,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
-    _cameraController?.stopImageStream();
-    _cameraController?.dispose();
+    _disposeCamera();
     super.dispose();
   }
 
@@ -134,13 +146,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                  
     final distanceText = distanceUnknown 
       ? '—' 
-      : '${alignmentState.distanceErrorM > 0 ? '+' : ''}${alignmentState.distanceErrorM.toStringAsFixed(2)}m';
+      : '${(alignmentState.absoluteDistanceM * 100).toStringAsFixed(0)}cm';
 
     final allDetections = visionState.allDetections;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
+    return VisibilityDetector(
+      key: const Key('home-screen-cam'),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction > 0.1) {
+          _initCamera();
+        } else {
+          _disposeCamera();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: SafeArea(
         child: Row(
           children: [
             // ── LEFT PANEL: Camera (flex: 65) ────────────────────────────────────
@@ -167,7 +188,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         painter: _MarkerPainter(
                           detections: allDetections,
                           activeMarkerId: detectedId,
-                          activePoseDistance: distanceUnknown ? null : alignmentState.distanceErrorM,
+                          activePoseDistance: distanceUnknown ? null : alignmentState.absoluteDistanceM,
                           activeAlignmentScore: alignmentScore,
                           imageSize: Size(
                             _cameraController!.value.previewSize!.width,
@@ -245,6 +266,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
+                            const SizedBox(width: AppSpacing.md),
+                            Icon(
+                              isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                              color: isConnected ? AppColors.successGreen : AppColors.textSecondary,
+                              size: 22,
+                            ),
                           ],
                         ),
                         IconButton(
@@ -283,6 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -336,12 +364,11 @@ class _MarkerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (detections.isEmpty) return;
     
-    final double sensorWidth = imageSize.width; // e.g. 1920
-    final double sensorHeight = imageSize.height; // e.g. 1080
-
-    // For portrait UI with a landscape sensor, we map sensorHeight to UI width, and sensorWidth to UI height.
-    final scaleX = size.width / sensorHeight;
-    final scaleY = size.height / sensorWidth;
+    // The camera image comes from the Y-plane which is (width x height) from
+    // the sensor. On a landscape Android device the sensor width maps to the
+    // screen width and the sensor height maps to the screen height.
+    final scaleX = size.width / imageSize.width;
+    final scaleY = size.height / imageSize.height;
 
     for (final detection in detections) {
       if (!detection.isValid) continue;
@@ -354,26 +381,15 @@ class _MarkerPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = isActive ? 4.0 : 2.0;
 
-      // Coordinate mapping for 90-deg CW rotated sensor:
-      // x_ui = y_sensor
-      // y_ui = sensorWidth - x_sensor
-      // If the bounding boxes appear mirrored or flipped, adjust this to:
-      // x_ui = sensorHeight - y_sensor
-      // y_ui = x_sensor
-      double mapX(double x, double y) => y * scaleX;
-      double mapY(double x, double y) => x * scaleY;
-
-      // Many Android devices actually need: x_ui = sensorHeight - y, y_ui = x
-      // Let's use the standard Android rear camera portrait mapping:
-      double standardMapX(double x, double y) => (sensorHeight - y) * scaleX;
-      double standardMapY(double x, double y) => x * scaleY;
+      double mapX(double x, double y) => x * scaleX;
+      double mapY(double x, double y) => y * scaleY;
 
       final corners = detection.corners;
       final path = Path()
-        ..moveTo(standardMapX(corners[0].x, corners[0].y), standardMapY(corners[0].x, corners[0].y))
-        ..lineTo(standardMapX(corners[1].x, corners[1].y), standardMapY(corners[1].x, corners[1].y))
-        ..lineTo(standardMapX(corners[2].x, corners[2].y), standardMapY(corners[2].x, corners[2].y))
-        ..lineTo(standardMapX(corners[3].x, corners[3].y), standardMapY(corners[3].x, corners[3].y))
+        ..moveTo(mapX(corners[0].x, corners[0].y), mapY(corners[0].x, corners[0].y))
+        ..lineTo(mapX(corners[1].x, corners[1].y), mapY(corners[1].x, corners[1].y))
+        ..lineTo(mapX(corners[2].x, corners[2].y), mapY(corners[2].x, corners[2].y))
+        ..lineTo(mapX(corners[3].x, corners[3].y), mapY(corners[3].x, corners[3].y))
         ..close();
       canvas.drawPath(path, paint);
 
@@ -381,8 +397,8 @@ class _MarkerPainter extends CustomPainter {
       final centerPaint = Paint()
         ..color = Colors.redAccent
         ..style = PaintingStyle.fill;
-      final cx = standardMapX(detection.center.x, detection.center.y);
-      final cy = standardMapY(detection.center.x, detection.center.y);
+      final cx = mapX(detection.center.x, detection.center.y);
+      final cy = mapY(detection.center.x, detection.center.y);
       canvas.drawCircle(Offset(cx, cy), isActive ? 6.0 : 4.0, centerPaint);
 
       // Label background
@@ -397,7 +413,7 @@ class _MarkerPainter extends CustomPainter {
       tp1.paint(canvas, Offset(cx + 14, cy - 6));
 
       if (isActive) {
-        final distText = activePoseDistance != null ? '${(activePoseDistance!).toStringAsFixed(2)}m' : '—';
+        final distText = activePoseDistance != null ? '${(activePoseDistance! * 100).toStringAsFixed(0)}cm' : '—';
         final scoreText = '${(activeAlignmentScore * 100).toStringAsFixed(0)}%';
         final span2 = TextSpan(text: 'Dist: $distText | Align: $scoreText', style: textStyle.copyWith(color: AppColors.primary));
         final tp2 = TextPainter(text: span2, textDirection: TextDirection.ltr);
