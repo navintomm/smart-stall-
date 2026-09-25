@@ -21,6 +21,7 @@ class CleaningControlPanel extends ConsumerStatefulWidget {
   final bool markerDetected;
   final bool alignmentReady;
   final bool cameraAvailable;
+  final int? markerId;
 
   const CleaningControlPanel({
     super.key,
@@ -31,6 +32,7 @@ class CleaningControlPanel extends ConsumerStatefulWidget {
     this.markerDetected = true,
     this.alignmentReady = true,
     this.cameraAvailable = true,
+    this.markerId,
   });
 
   @override
@@ -108,13 +110,20 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
     final playbackState = ref.watch(routinePlaybackProvider);
     final isRunning = playbackState.status == PlaybackStatus.playing;
 
-    // Ensure selection stays valid
+    // Filter routines by marker ID to ensure selection stays valid
+    final availableRoutines = routines.where((r) => 
+        r.markerId == widget.markerId || r.markerId == null
+    ).toList();
+
     if (_selectedRoutineId == null && libraryState.defaultRoutineId != null) {
-      _selectedRoutineId = libraryState.defaultRoutineId;
+      if (availableRoutines.any((r) => r.id == libraryState.defaultRoutineId)) {
+        _selectedRoutineId = libraryState.defaultRoutineId;
+      }
     }
+    
     if (_selectedRoutineId != null &&
-        routines.every((r) => r.id != _selectedRoutineId)) {
-      _selectedRoutineId = routines.isEmpty ? null : routines.first.id;
+        availableRoutines.every((r) => r.id != _selectedRoutineId)) {
+      _selectedRoutineId = availableRoutines.isEmpty ? null : availableRoutines.first.id;
     }
 
     final isStartEnabled = widget.isReady && !isRunning && _selectedRoutineId != null;
@@ -136,6 +145,7 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
             markerDetected: widget.markerDetected,
             alignmentReady: widget.alignmentReady,
             cameraAvailable: widget.cameraAvailable,
+            markerId: widget.markerId,
             selectedRoutineId: _selectedRoutineId,
             onRoutineChanged: (id) {
               if (id != null) {

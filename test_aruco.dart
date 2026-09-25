@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 
 void main() {

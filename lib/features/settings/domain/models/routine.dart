@@ -7,6 +7,7 @@ class Routine {
   final List<RoutineFrame> frames;
   final DateTime createdAt;
   final int durationMs;
+  final int? markerId;
 
   const Routine({
     required this.id,
@@ -14,6 +15,7 @@ class Routine {
     required this.frames,
     required this.createdAt,
     required this.durationMs,
+    this.markerId,
   });
 
   Routine copyWith({
@@ -22,6 +24,7 @@ class Routine {
     List<RoutineFrame>? frames,
     DateTime? createdAt,
     int? durationMs,
+    int? markerId,
   }) {
     return Routine(
       id: id ?? this.id,
@@ -29,6 +32,7 @@ class Routine {
       frames: frames ?? this.frames,
       createdAt: createdAt ?? this.createdAt,
       durationMs: durationMs ?? this.durationMs,
+      markerId: markerId ?? this.markerId,
     );
   }
 

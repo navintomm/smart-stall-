@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../settings/presentation/providers/motion_library_provider.dart';
 import '../../settings/presentation/providers/global_settings_provider.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../vision/presentation/providers/aruco_vision_provider.dart';
 import '../../vision/domain/models/aruco_detection_result.dart';
 import '../../vision/presentation/providers/alignment_provider.dart';
@@ -117,19 +118,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final libraryState = ref.watch(motionLibraryProvider);
     final globalSettings = ref.watch(globalSettingsProvider);
     
+    final isSimulation = ref.watch(appConfigProvider).isSimulationMode;
+    
     // Check all required conditions for Start Cleaning
     final cameraAvailable = _cameraController?.value.isInitialized ?? false;
     final markerDetected = visionState.detection != null;
-    final correctMarkerId = markerDetected && visionState.detection!.markerId == VisionConstants.targetMarkerId;
     final alignmentReady = alignmentState.status == AlignmentStatus.ready;
     final hasValidRoutine = libraryState.defaultRoutineId != null || libraryState.routines.isNotEmpty;
 
     final isReady = cameraAvailable &&
                     isCalibrated &&
                     markerDetected &&
-                    correctMarkerId &&
-                    alignmentReady &&
-                    isConnected &&
+                    (alignmentReady || isSimulation) &&
+                    (isConnected || isSimulation) &&
                     !isEStop &&
                     hasValidRoutine;
                     
@@ -302,6 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         markerDetected: markerDetected,
                         alignmentReady: alignmentReady,
                         cameraAvailable: cameraAvailable,
+                        markerId: detectedId,
                       ),
                     ),
                   ],

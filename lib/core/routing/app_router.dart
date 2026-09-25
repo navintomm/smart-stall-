@@ -10,6 +10,7 @@ import '../../features/settings/presentation/settings_screen.dart';
 
 // Settings sub-pages
 import '../../features/settings/presentation/pages/teaching_page.dart';
+import '../../features/settings/presentation/pages/manual_teaching_page.dart';
 import '../../features/settings/presentation/pages/motion_library_page.dart';
 import '../../features/settings/presentation/pages/default_routine_page.dart';
 import '../../features/settings/presentation/pages/manual_control_page.dart';
@@ -57,6 +58,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'teaching',
                   builder: (context, state) => const TeachingPage(),
+                ),
+                GoRoute(
+                  path: 'manual-teaching',
+                  builder: (context, state) => const ManualTeachingPage(),
                 ),
                 GoRoute(
                   path: 'motion-library',

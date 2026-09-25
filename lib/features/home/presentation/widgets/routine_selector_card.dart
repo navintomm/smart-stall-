@@ -21,6 +21,7 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
   final bool markerDetected;
   final bool alignmentReady;
   final bool cameraAvailable;
+  final int? markerId;
   final String? selectedRoutineId;
   final ValueChanged<String?>? onRoutineChanged;
 
@@ -34,6 +35,7 @@ class RoutineSelectorCard extends ConsumerStatefulWidget {
     this.markerDetected = true,
     this.alignmentReady = true,
     this.cameraAvailable = true,
+    this.markerId,
     this.selectedRoutineId,
     this.onRoutineChanged,
   });
@@ -46,31 +48,52 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
   @override
   Widget build(BuildContext context) {
     final libraryState = ref.watch(motionLibraryProvider);
-    final routines = libraryState.routines;
+    final allRoutines = libraryState.routines;
+    
+    // Filter routines based on detected marker ID (show matching + global ones without ID)
+    final routines = allRoutines.where((r) => 
+        r.markerId == widget.markerId || r.markerId == null
+    ).toList();
 
-    final canStart = widget.isReady && widget.selectedRoutineId != null;
+    // Auto-select if current selection is invalid for this marker
+    String? currentSelection = widget.selectedRoutineId;
+    if (currentSelection != null && !routines.any((r) => r.id == currentSelection)) {
+      currentSelection = routines.isNotEmpty ? routines.first.id : null;
+      // Schedule an update back to parent
+      if (currentSelection != widget.selectedRoutineId && widget.onRoutineChanged != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onRoutineChanged!(currentSelection);
+        });
+      }
+    }
+
+    final canStart = widget.isReady && currentSelection != null;
 
     return SurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Section label
-          Row(
-            children: [
-              const Icon(AppIcons.library, size: 18, color: AppColors.primary),
-              const SizedBox(width: AppSpacing.sm),
-              Text('Selected Routine', style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              )),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
+      padding: EdgeInsets.zero,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Section label
+            Row(
+              children: [
+                const Icon(AppIcons.library, size: 18, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Text('Selected Routine', style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                )),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
 
-          // Dropdown
-          if (routines.isEmpty)
+            // Dropdown
+            if (routines.isEmpty)
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
@@ -85,7 +108,7 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
               ),
             )
           else
-            Container(
+              Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg, vertical: 4),
               decoration: BoxDecoration(
@@ -95,9 +118,11 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: widget.selectedRoutineId,
+                  value: currentSelection,
                   isExpanded: true,
-                  style: AppTextStyles.bodyLarge,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.text,
+                  ),
                   icon: const Icon(Icons.expand_more_rounded,
                       color: AppColors.primary),
                   onChanged: widget.onRoutineChanged,
@@ -132,10 +157,11 @@ class _RoutineSelectorCardState extends ConsumerState<RoutineSelectorCard> {
           const SizedBox(height: AppSpacing.lg),
 
           // Blocking-reason strip — only visible when Start is disabled
-          if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: widget.selectedRoutineId != null),
+          if (!canStart) _BlockingReasonStrip(widget: widget, hasRoutine: currentSelection != null),
           if (!canStart) const SizedBox(height: AppSpacing.sm),
 
         ],
+      ),
       ),
     );
   }

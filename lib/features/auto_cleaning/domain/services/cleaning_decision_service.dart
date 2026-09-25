@@ -9,7 +9,6 @@ final cleaningDecisionServiceProvider = Provider<CleaningDecisionService>((ref) 
 
 class CleaningDecisionService {
   // Configurable dosing parameters
-  // TODO: These should ideally come from remote config or local settings
   final int _pumpFlowRateMlPerSec = 70;
 
   /// Converts a [DirtDetectionResult] into a [CleaningProfile] recommendation.

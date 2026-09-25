@@ -19,5 +19,5 @@ class VisionConstants {
   static const double targetDistanceMeters = 0.6; // e.g. 60cm optimal distance
   static const double maxDistanceErrorMeters = 0.2; // ±20cm from target
 
-  static const double alignmentScoreThreshold = 0.95; // 95% alignment required to start
+  static const double alignmentScoreThreshold = 0.50; // 50% alignment required to start
 }

@@ -16,20 +16,18 @@ final alignmentProvider = Provider<AlignmentResult>((ref) {
     return AlignmentResult.empty(AlignmentStatus.scanning);
   }
 
-  // Calculate errors
   final horizontalError = pose.x.abs();
   final verticalError = pose.y.abs();
-  final distanceError = (pose.distance - VisionConstants.targetDistanceMeters).abs();
   final yawError = pose.yaw.abs();
 
   // Normalize scores (0.0 means outside tolerance, 1.0 means perfect 0 error)
   double hScore = 1.0 - (horizontalError / VisionConstants.maxHorizontalErrorMeters).clamp(0.0, 1.0);
   double vScore = 1.0 - (verticalError / VisionConstants.maxVerticalErrorMeters).clamp(0.0, 1.0);
-  double dScore = 1.0 - (distanceError / VisionConstants.maxDistanceErrorMeters).clamp(0.0, 1.0);
   double yawScore = 1.0 - (yawError / VisionConstants.maxYawErrorDegrees).clamp(0.0, 1.0);
 
-  // Overall score is weighted average
-  double totalScore = (hScore * 0.3) + (vScore * 0.3) + (dScore * 0.2) + (yawScore * 0.2);
+
+  // Overall score is weighted average (distance ignored as per requirements)
+  double totalScore = (hScore * 0.4) + (vScore * 0.4) + (yawScore * 0.2);
 
   AlignmentStatus status = AlignmentStatus.aligning;
   if (totalScore >= VisionConstants.alignmentScoreThreshold) {

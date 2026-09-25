@@ -23,7 +23,7 @@ final manualControlProvider = StateNotifierProvider<ManualControlNotifier, Manua
 });
 
 class ManualControlNotifier extends StateNotifier<ManualControlState> {
-  final BluetoothService _bluetoothService;
+  final AppBluetoothService _bluetoothService;
 
   ManualControlNotifier(this._bluetoothService) : super(
     ManualControlState(

@@ -5,6 +5,7 @@ class AppRoutes {
 
   // Settings sub-pages
   static const String teaching = '/settings/teaching';
+  static const String manualTeaching = '/settings/manual-teaching';
   static const String motionLibrary = '/settings/motion-library';
   static const String defaultRoutine = '/settings/default-routine';
   static const String manualControl = '/settings/manual-control';

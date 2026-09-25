@@ -54,7 +54,7 @@ class SettingsScreen extends ConsumerWidget {
                             iconColor: const Color(0xFF6C63FF),
                             title: 'Teaching',
                             subtitle: 'Record cleaning routines',
-                            onTap: () => context.push(AppRoutes.teaching),
+                            onTap: () => _showTeachingSelectionDialog(context),
                           ),
                           const Divider(height: 1, indent: 64, color: AppColors.borderLight),
                           _SettingsTile(
@@ -145,6 +145,33 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showTeachingSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Teaching Mode'),
+        content: const Text('How would you like to record a new cleaning routine?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.manualTeaching);
+            },
+            child: const Text('Manual Teaching'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push(AppRoutes.teaching);
+            },
+            child: const Text('Joystick Teaching'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showMarkerSizeDialog(BuildContext context, WidgetRef ref) {
     final currentSize = ref.read(globalSettingsProvider).defaultMarkerSizeMeters * 1000.0;
     final controller = TextEditingController(text: currentSize.toStringAsFixed(0));
@@ -212,8 +239,8 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
 
-    // Reload devices now that we have permission
-    ref.read(bluetoothProvider.notifier).loadDevices();
+    // Start BLE scan instead of loading bonded devices
+    ref.read(bluetoothProvider.notifier).startScan();
 
     if (!context.mounted) return;
 
@@ -223,33 +250,45 @@ class SettingsScreen extends ConsumerWidget {
         return Consumer(builder: (context, ref, child) {
           final bluetoothState = ref.watch(bluetoothProvider);
           return AlertDialog(
-            title: const Text('Connect to HC-05'),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Connect to ESP32 BLE'),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => ref.read(bluetoothProvider.notifier).startScan(),
+                ),
+              ],
+            ),
             content: SizedBox(
               width: double.maxFinite,
-              height: 300,
+              height: 400,
               child: bluetoothState.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, st) => Center(child: Text('Error: $e')),
-                data: (devices) {
-                  if (devices.isEmpty) {
+                data: (results) {
+                  if (results.isEmpty) {
                     return const Center(
-                      child: Text('No paired devices found.\nPlease pair HC-05 in Android Bluetooth Settings first.', textAlign: TextAlign.center),
+                      child: Text('Scanning for BLE devices...\nMake sure your ESP32 is powered on.', textAlign: TextAlign.center),
                     );
                   }
                   return ListView.builder(
-                    itemCount: devices.length,
+                    itemCount: results.length,
                     itemBuilder: (context, index) {
-                      final device = devices[index];
+                      final r = results[index];
+                      final name = r.device.advName.isNotEmpty ? r.device.advName : 'Unknown Device';
                       return ListTile(
                         leading: const Icon(Icons.bluetooth),
-                        title: Text(device.name ?? 'Unknown Device'),
-                        subtitle: Text(device.address),
+                        title: Text(name),
+                        subtitle: Text('${r.device.remoteId.str} (RSSI: ${r.rssi})'),
                         onTap: () async {
+                          ref.read(bluetoothProvider.notifier).stopScan();
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connecting...')));
-                          final success = await ref.read(bluetoothProvider.notifier).connect(device.address);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connecting to $name...')));
+                          
+                          final success = await ref.read(bluetoothProvider.notifier).connect(r.device.remoteId.str);
                           if (success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connected successfully!'), backgroundColor: Colors.green));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connected to $name successfully!'), backgroundColor: Colors.green));
                           } else if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to connect.'), backgroundColor: Colors.red));
                           }
@@ -261,12 +300,21 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              TextButton(
+                onPressed: () {
+                  ref.read(bluetoothProvider.notifier).stopScan();
+                  Navigator.pop(context);
+                }, 
+                child: const Text('Close'),
+              ),
             ],
           );
         });
       },
-    );
+    ).then((_) {
+      // Ensure we stop scanning when dialog is closed via outside tap
+      ref.read(bluetoothProvider.notifier).stopScan();
+    });
   }
 }
 
