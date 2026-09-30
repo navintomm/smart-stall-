@@ -14,6 +14,7 @@
 #include "vision/PoseEstimator.h"
 #include "vision/AlignmentEngine.h"
 #include "vision/CalibrationManager.h"
+#include "navigation/TrajectoryExecutor.h"
 
 void CommandDispatcher::handleCommand(const RobotPacket& packet) {
     if (EmergencyController::isEmergency() && packet.commandId != 402) {
@@ -63,6 +64,16 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
         case 201: // BASE_ROTATION
             if (packet.payload.containsKey("angle")) {
                 ServoController::setAngle(0, packet.payload["angle"].as<int>());
+            }
+            break;
+        case 202: // SHOULDER
+            if (packet.payload.containsKey("angle")) {
+                ServoController::setAngle(1, packet.payload["angle"].as<int>());
+            }
+            break;
+        case 203: // ELBOW
+            if (packet.payload.containsKey("angle")) {
+                ServoController::setAngle(2, packet.payload["angle"].as<int>());
             }
             break;
             
@@ -128,10 +139,10 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
 
         case 601: { // MISSION_START
             if (packet.payload.containsKey("waypoints")) {
-                JsonArray arr = packet.payload["waypoints"].as<JsonArray>();
+                JsonArrayConst arr = packet.payload["waypoints"].as<JsonArrayConst>();
                 int wps[10];
                 int count = 0;
-                for (JsonVariant v : arr) {
+                for (JsonVariantConst v : arr) {
                     if (count < 10) {
                         wps[count++] = v.as<int>();
                     }
@@ -152,6 +163,15 @@ void CommandDispatcher::handleCommand(const RobotPacket& packet) {
         case 604: // MISSION_CANCEL
             MissionPlanner::cancelMission();
             RobotState::setMode("IDLE");
+            break;
+            
+        case 610: // TRAJECTORY_CHUNK
+            TrajectoryExecutor::handleChunk(packet.payload);
+            break;
+        case 611: // TRAJECTORY_CONTROL
+            if (packet.payload.containsKey("action")) {
+                TrajectoryExecutor::handleControl(packet.payload["action"].as<String>());
+            }
             break;
             
         case 701: // VISION_TELEMETRY

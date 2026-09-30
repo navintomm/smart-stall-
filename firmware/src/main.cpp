@@ -16,6 +16,7 @@
 #include "hardware/CleaningController.h"
 #include "vision/LocalizationEngine.h"
 #include "navigation/MissionPlanner.h"
+#include "navigation/TrajectoryExecutor.h"
 
 #include "SystemHealthManager.h"
 #include "RecoveryManager.h"
@@ -37,6 +38,7 @@ void setup() {
     // Initialize Vision & Navigation
     LocalizationEngine::init();
     MissionPlanner::init();
+    TrajectoryExecutor::init();
 
     // Health & Recovery
     SystemHealthManager::init();
@@ -68,6 +70,7 @@ void loop() {
     // 2.5 Vision & Navigation non-blocking ticks
     LocalizationEngine::tick();
     MissionPlanner::tick();
+    TrajectoryExecutor::tick();
     
     // 3. Update dummy internal state (battery drain, temps) via HAL
     SensorManager::update();

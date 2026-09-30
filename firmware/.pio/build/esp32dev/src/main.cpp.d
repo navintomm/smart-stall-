@@ -201,4 +201,12 @@
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h \
  include/hardware/MotorController.h include/hardware/PumpController.h \
  include/hardware/BrushController.h include/hardware/SensorManager.h \
- include/hardware/EmergencyController.h include/hardware/SelfTest.h
+ include/hardware/EmergencyController.h include/hardware/SelfTest.h \
+ include/hardware/CleaningController.h \
+ .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.h \
+ .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.hpp \
+ .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson/Configuration.hpp \
+ include/vision/LocalizationEngine.h include/vision/MarkerRegistry.h \
+ include/navigation/MissionPlanner.h include/navigation/WaypointManager.h \
+ src/navigation/TrajectoryExecutor.h include/SystemHealthManager.h \
+ include/RecoveryManager.h

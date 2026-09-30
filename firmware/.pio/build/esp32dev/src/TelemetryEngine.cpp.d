@@ -145,7 +145,14 @@
  .pio/libdeps/esp32dev/ESP32Servo/src/ESP32Servo.h \
  .pio/libdeps/esp32dev/ESP32Servo/src/ESP32PWM.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h \
- include/hardware/MotorController.h include/config/pin_map.h \
+ include/hardware/MotorController.h include/hardware/CleaningController.h \
+ include/vision/CameraManager.h include/vision/CalibrationManager.h \
+ include/vision/LocalizationEngine.h include/vision/MarkerRegistry.h \
+ include/vision/AlignmentEngine.h include/vision/PoseEstimator.h \
+ include/vision/ArucoDetector.h include/vision/PoseEstimator.h \
+ include/navigation/MissionPlanner.h include/navigation/WaypointManager.h \
+ include/navigation/NavigationController.h include/SystemHealthManager.h \
+ include/config/pin_map.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \

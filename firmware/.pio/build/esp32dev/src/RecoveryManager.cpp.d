@@ -1,9 +1,5 @@
-.pio/build/esp32dev/src/CommandDispatcher.cpp.o: \
- src/CommandDispatcher.cpp include/CommandDispatcher.h \
- include/ProtocolCodec.h \
- .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.h \
- .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.hpp \
- .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson/Configuration.hpp \
+.pio/build/esp32dev/src/RecoveryManager.cpp.o: src/RecoveryManager.cpp \
+ include/RecoveryManager.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp_arduino_version.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/freertos/FreeRTOS.h \
@@ -138,16 +134,10 @@
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
+ include/SystemHealthManager.h include/Logger.h \
  include/hardware/EmergencyController.h \
- include/hardware/ServoController.h \
- .pio/libdeps/esp32dev/ESP32Servo/src/ESP32Servo.h \
- .pio/libdeps/esp32dev/ESP32Servo/src/ESP32PWM.h \
- C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h \
- include/hardware/PumpController.h include/hardware/BrushController.h \
- include/hardware/MotorController.h include/hardware/SensorManager.h \
- include/hardware/CleaningController.h \
+ include/vision/LocalizationEngine.h include/vision/MarkerRegistry.h \
  include/navigation/MissionPlanner.h include/navigation/WaypointManager.h \
- include/WifiServerHandler.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \
@@ -207,8 +197,4 @@
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Server.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
- C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
- include/RobotState.h include/Logger.h include/vision/ArucoDetector.h \
- include/vision/PoseEstimator.h include/vision/ArucoDetector.h \
- include/vision/AlignmentEngine.h include/vision/PoseEstimator.h \
- include/vision/CalibrationManager.h src/navigation/TrajectoryExecutor.h
+ C:/Users/NAVIN\ TOM\ BABU/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h
