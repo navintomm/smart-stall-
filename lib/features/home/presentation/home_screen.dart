@@ -17,7 +17,6 @@ import '../../vision/domain/models/alignment_result.dart';
 import '../../vision/presentation/providers/calibration_provider.dart';
 import '../../connection/presentation/providers/connection_provider.dart';
 import '../../manual_control/presentation/providers/manual_control_provider.dart';
-import '../../../core/constants/vision_constants.dart';
 import 'widgets/home_hud_overlay.dart';
 import 'widgets/cleaning_control_panel.dart';
 
@@ -184,7 +183,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _CameraLoadingView(status: visionState.status),
 
                     // Bounding box painter for ALL markers
-                    if (allDetections.isNotEmpty)
+                    if (_cameraController != null && 
+                        _cameraController!.value.isInitialized && 
+                        allDetections.isNotEmpty)
                       CustomPaint(
                         painter: _MarkerPainter(
                           detections: allDetections,

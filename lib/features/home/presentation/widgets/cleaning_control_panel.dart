@@ -43,17 +43,9 @@ class CleaningControlPanel extends ConsumerStatefulWidget {
 class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
   String? _selectedRoutineId;
 
-  @override
-  void didUpdateWidget(covariant CleaningControlPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Auto-pause if alignment is lost while playing
-    if (oldWidget.alignmentReady && !widget.alignmentReady) {
-      final playbackState = ref.read(routinePlaybackProvider);
-      if (playbackState.status == PlaybackStatus.playing) {
-        _handlePause();
-      }
-    }
-  }
+  // Removed didUpdateWidget auto-pause logic, because playing back a motion
+  // physically moves the arm, which naturally breaks the camera's alignment
+  // with the marker, causing an immediate unwanted pause.
 
   void _handleStart() async {
     if (!widget.isReady) return;

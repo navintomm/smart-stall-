@@ -46,8 +46,22 @@ class HardwareRobotRepository implements RobotRepository {
       try {
         cmdId = CommandCatalog.allCommands.firstWhere((cmd) => cmd.name == command).id;
       } catch (_) {
-        if (command == 'MOVE_SERVO') cmdId = CommandCatalog.baseRotation.id;
-        if (command == 'TOGGLE_TOOL') cmdId = CommandCatalog.waterPump.id;
+        if (command == 'MOVE_SERVO') {
+          final servoId = finalPayload['id'] as String?;
+          if (servoId == 'base') {
+            cmdId = CommandCatalog.baseRotation.id;
+          } else if (servoId == 'shoulder') {
+            cmdId = CommandCatalog.shoulder.id;
+          } else if (servoId == 'elbow') {
+            cmdId = CommandCatalog.elbow.id;
+          } else if (servoId == 'wrist') {
+            cmdId = CommandCatalog.wrist.id;
+          } else {
+            cmdId = CommandCatalog.baseRotation.id; // fallback
+          }
+        } else if (command == 'TOGGLE_TOOL') {
+          cmdId = CommandCatalog.waterPump.id;
+        }
       }
     }
 

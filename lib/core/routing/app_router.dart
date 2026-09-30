@@ -15,6 +15,9 @@ import '../../features/settings/presentation/pages/motion_library_page.dart';
 import '../../features/settings/presentation/pages/default_routine_page.dart';
 import '../../features/settings/presentation/pages/manual_control_page.dart';
 import '../../features/vision/presentation/pages/camera_calibration_page.dart';
+import '../../features/dmp_preview/presentation/pages/dmp_preview_screen.dart';
+import '../../features/settings/domain/models/routine.dart';
+
 
 // Developer / hidden
 import '../../features/developer_tools/presentation/developer_dashboard_screen.dart';
@@ -78,6 +81,16 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'camera-calibration',
                   builder: (context, state) => const CameraCalibrationPage(),
+                ),
+                GoRoute(
+                  path: 'dmp-preview',
+                  builder: (context, state) {
+                    // Routine can be passed as extra; null loads the demo fixture
+                    final extra = state.extra;
+                    return DmpPreviewScreen(
+                      routine: extra is Routine ? extra : null,
+                    );
+                  },
                 ),
               ],
             ),

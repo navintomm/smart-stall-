@@ -10,6 +10,7 @@ class AppRoutes {
   static const String defaultRoutine = '/settings/default-routine';
   static const String manualControl = '/settings/manual-control';
   static const String cameraCalibration = '/settings/camera-calibration';
+  static const String dmpPreview = '/settings/dmp-preview';
 
   // Hidden developer section
   static const String developerCenter = '/developer';

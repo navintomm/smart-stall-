@@ -8,8 +8,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../shared/widgets/foundation/glass_card.dart';
 import '../../../../shared/widgets/feedback/empty_state_widget.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/motion_library_provider.dart';
 import '../../domain/models/routine.dart';
+import '../../../../core/routing/app_routes.dart';
 
 class MotionLibraryPage extends ConsumerWidget {
   const MotionLibraryPage({super.key});
@@ -162,12 +164,19 @@ class _RoutineCard extends ConsumerWidget {
                 onTap: () => _showPreview(context),
               ),
               const SizedBox(width: AppSpacing.sm),
+              _ActionButton(
+                icon: Icons.auto_awesome_rounded,
+                label: 'Run DMP',
+                onTap: () => context.push(AppRoutes.dmpPreview, extra: routine),
+                accent: true,
+              ),
+              const SizedBox(width: AppSpacing.sm),
               if (!isDefault)
                 _ActionButton(
                   icon: AppIcons.defaultRoutine,
                   label: 'Set Default',
                   onTap: () => notifier.setDefault(routine.id),
-                  accent: true,
+                  accent: false,
                 ),
             ],
           ),
