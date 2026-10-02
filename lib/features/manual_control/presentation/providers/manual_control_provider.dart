@@ -6,12 +6,11 @@ import '../../domain/models/sensor_status.dart';
 import '../../domain/models/command_log_entry.dart';
 import '../../../../core/providers/di_providers.dart';
 import '../../../connection/presentation/providers/bluetooth_provider.dart';
-import '../../../connection/domain/services/bluetooth_service.dart';
 
 final manualControlProvider = StateNotifierProvider<ManualControlNotifier, ManualControlState>((ref) {
-  final bluetoothService = ref.watch(bluetoothServiceProvider);
+  final btNotifier = ref.watch(bluetoothProvider.notifier);
     
-  final notifier = ManualControlNotifier(bluetoothService);
+  final notifier = ManualControlNotifier(btNotifier);
 
   ref.listen(robotSimulatorProvider.select((s) => s.logStream), (_, stream) {
     stream.listen((newLog) {
@@ -23,9 +22,9 @@ final manualControlProvider = StateNotifierProvider<ManualControlNotifier, Manua
 });
 
 class ManualControlNotifier extends StateNotifier<ManualControlState> {
-  final AppBluetoothService _bluetoothService;
+  final BluetoothStateNotifier _btNotifier;
 
-  ManualControlNotifier(this._bluetoothService) : super(
+  ManualControlNotifier(this._btNotifier) : super(
     ManualControlState(
       servos: ServoControl.placeholders,
       tools: ToolControl.placeholders,
@@ -46,7 +45,7 @@ class ManualControlNotifier extends StateNotifier<ManualControlState> {
   }
 
   Future<void> sendCommand(String command) async {
-    _bluetoothService.sendCommand(command);
+    _btNotifier.sendCommand(command);
   }
 
   void toggleEmergencyStop() {
@@ -60,4 +59,3 @@ class ManualControlNotifier extends StateNotifier<ManualControlState> {
     sendCommand(state.emergencyStopEngaged ? 'EMERGENCY_STOP' : 'EMERGENCY_RELEASE');
   }
 }
-

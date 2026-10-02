@@ -239,8 +239,9 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
 
-    // Start BLE scan instead of loading bonded devices
-    ref.read(bluetoothProvider.notifier).startScan();
+    // Start BLE scan and load paired Classic devices simultaneously
+    ref.read(bluetoothProvider.notifier).startBleScan();
+    ref.read(bluetoothProvider.notifier).loadPairedDevices();
 
     if (!context.mounted) return;
 
@@ -248,72 +249,189 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return Consumer(builder: (context, ref, child) {
-          final bluetoothState = ref.watch(bluetoothProvider);
-          return AlertDialog(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Connect to ESP32 BLE'),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => ref.read(bluetoothProvider.notifier).startScan(),
+          final btState = ref.watch(bluetoothProvider);
+          return DefaultTabController(
+            length: 2,
+            child: AlertDialog(
+              title: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Connect to Hardware'),
+                      if (btState.isConnected)
+                        Chip(
+                          label: Text(
+                            btState.connectedDeviceName ?? 'Connected',
+                            style: const TextStyle(fontSize: 11, color: Colors.white),
+                          ),
+                          backgroundColor: AppColors.successGreen,
+                          padding: EdgeInsets.zero,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const TabBar(
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    tabs: [
+                      Tab(text: 'BLE (ESP32)', icon: Icon(Icons.bluetooth, size: 16)),
+                      Tab(text: 'Classic (HC-05)', icon: Icon(Icons.bluetooth_searching, size: 16)),
+                    ],
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 350,
+                child: TabBarView(
+                  children: [
+                    // ── TAB 1: BLE Scan ───────────────────────────────────
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: Text(btState.isScanning ? 'Scanning...' : 'Scan'),
+                              onPressed: btState.isScanning
+                                  ? null
+                                  : () => ref.read(bluetoothProvider.notifier).startBleScan(),
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: btState.bleResults.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    btState.isScanning
+                                        ? 'Scanning for BLE devices...\nMake sure your ESP32 is powered on.'
+                                        : 'No BLE devices found.\nTap Scan to search again.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: btState.bleResults.length,
+                                  itemBuilder: (context, index) {
+                                    final r = btState.bleResults[index];
+                                    final name = r.device.advName.isNotEmpty
+                                        ? r.device.advName
+                                        : 'Unknown Device';
+                                    return ListTile(
+                                      leading: const Icon(Icons.bluetooth, color: AppColors.informationCyan),
+                                      title: Text(name),
+                                      subtitle: Text('${r.device.remoteId.str} (RSSI: ${r.rssi})'),
+                                      dense: true,
+                                      onTap: () async {
+                                        ref.read(bluetoothProvider.notifier).stopBleScan();
+                                        Navigator.pop(context);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Connecting to $name via BLE...')));
+                                        final success = await ref
+                                            .read(bluetoothProvider.notifier)
+                                            .connectBle(r.device.remoteId.str, name: name);
+                                        if (success && context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                              content: Text('Connected to $name!'),
+                                              backgroundColor: Colors.green));
+                                        } else if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                              content: Text('Failed to connect via BLE.'),
+                                              backgroundColor: Colors.red));
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+                    // ── TAB 2: Classic Paired Devices ─────────────────────
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Refresh'),
+                              onPressed: () =>
+                                  ref.read(bluetoothProvider.notifier).loadPairedDevices(),
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: btState.classicDevices.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No paired devices found.\nPair your HC-05 in Android Bluetooth Settings first.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: btState.classicDevices.length,
+                                  itemBuilder: (context, index) {
+                                    final device = btState.classicDevices[index];
+                                    final name = device.name ?? 'Unknown';
+                                    return ListTile(
+                                      leading: const Icon(Icons.bluetooth_searching,
+                                          color: AppColors.warningOrange),
+                                      title: Text(name),
+                                      subtitle: Text(device.address),
+                                      dense: true,
+                                      onTap: () async {
+                                        Navigator.pop(context);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Connecting to $name via Classic...')));
+                                        final success = await ref
+                                            .read(bluetoothProvider.notifier)
+                                            .connectClassic(device.address, name: name);
+                                        if (success && context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                              content: Text('Connected to $name!'),
+                                              backgroundColor: Colors.green));
+                                        } else if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                              content: Text('Failed to connect via Classic BT.'),
+                                              backgroundColor: Colors.red));
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                if (btState.isConnected)
+                  TextButton(
+                    onPressed: () {
+                      ref.read(bluetoothProvider.notifier).disconnect();
+                    },
+                    child: const Text('Disconnect', style: TextStyle(color: AppColors.dangerRed)),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    ref.read(bluetoothProvider.notifier).stopBleScan();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Close'),
                 ),
               ],
             ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: bluetoothState.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, st) => Center(child: Text('Error: $e')),
-                data: (results) {
-                  if (results.isEmpty) {
-                    return const Center(
-                      child: Text('Scanning for BLE devices...\nMake sure your ESP32 is powered on.', textAlign: TextAlign.center),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final r = results[index];
-                      final name = r.device.advName.isNotEmpty ? r.device.advName : 'Unknown Device';
-                      return ListTile(
-                        leading: const Icon(Icons.bluetooth),
-                        title: Text(name),
-                        subtitle: Text('${r.device.remoteId.str} (RSSI: ${r.rssi})'),
-                        onTap: () async {
-                          ref.read(bluetoothProvider.notifier).stopScan();
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connecting to $name...')));
-                          
-                          final success = await ref.read(bluetoothProvider.notifier).connect(r.device.remoteId.str);
-                          if (success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connected to $name successfully!'), backgroundColor: Colors.green));
-                          } else if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to connect.'), backgroundColor: Colors.red));
-                          }
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  ref.read(bluetoothProvider.notifier).stopScan();
-                  Navigator.pop(context);
-                }, 
-                child: const Text('Close'),
-              ),
-            ],
           );
         });
       },
     ).then((_) {
-      // Ensure we stop scanning when dialog is closed via outside tap
-      ref.read(bluetoothProvider.notifier).stopScan();
+      ref.read(bluetoothProvider.notifier).stopBleScan();
     });
   }
 }
