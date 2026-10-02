@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "RobotState.h"
 #include "WifiServerHandler.h"
+#include "BleServerHandler.h"
 #include "TelemetryEngine.h"
 
 // HAL
@@ -49,6 +50,7 @@ void setup() {
     
     RobotState::init();
     WifiServerHandler::init();
+    BleServerHandler::init();
     TelemetryEngine::init();
     
     Logger::info("Main", "Initialization Complete.");
@@ -57,8 +59,9 @@ void setup() {
 void loop() {
     SystemHealthManager::tickStart();
 
-    // 1. Maintain TCP connections and process incoming packets
+    // 1. Maintain TCP & BLE connections and process incoming packets
     WifiServerHandler::tick();
+    BleServerHandler::tick();
     
     // 2. Hardware non-blocking ticks
     EmergencyController::tick();
@@ -82,6 +85,7 @@ void loop() {
     // 4. Broadcast telemetry 1Hz
     TelemetryEngine::tick([](const String& outJson) {
         WifiServerHandler::sendData(outJson);
+        BleServerHandler::sendData(outJson);
     });
     
     // Tiny delay to prevent WDT resets

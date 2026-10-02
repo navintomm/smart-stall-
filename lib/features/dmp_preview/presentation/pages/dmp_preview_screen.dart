@@ -103,9 +103,9 @@ class _DmpPreviewScreenState extends ConsumerState<DmpPreviewScreen>
             ),
         ],
       ),
-      actions: [
+      actions: const [
         // View mode toggle in app bar for quick access
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(right: AppSpacing.md),
           child: Center(child: ViewModeToggle()),
         ),
@@ -163,6 +163,7 @@ class _DmpPreviewScreenState extends ConsumerState<DmpPreviewScreen>
         ),
         // Approve / Reject always visible at bottom
         const Divider(height: 1, color: AppColors.borderLight),
+        const DryRunStreamingStatus(),
         ApproveRejectBar(
           onRejected: () => context.pop(),
         ),
@@ -355,7 +356,7 @@ class _SafetyBanner extends StatelessWidget {
 /// pipeline during Checkpoint 4.
 DmpResult _buildDemoFixture() {
   // Reproduce scara_demo.csv synthetic trajectory (500 samples, 5 seconds, 100 Hz)
-  final n = 500;
+  const n = 500;
   const double totalSec = 5.0;
 
   final originalSamples = <DmpTrajectorySample>[];

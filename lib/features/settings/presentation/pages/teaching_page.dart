@@ -280,8 +280,11 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      // Fit joystick to available height minus label and status card
-                      final maxJoy = (constraints.maxHeight - 80).clamp(100.0, 200.0);
+                      // Dynamically adjust available height for joystick based on whether the status card is shown.
+                      final bool showCard = !recordState.isIdle;
+                      final double reservedHeight = showCard ? 150.0 : 60.0;
+                      final maxJoy = (constraints.maxHeight - reservedHeight).clamp(80.0, 200.0);
+
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -301,10 +304,11 @@ class _TeachingPageState extends ConsumerState<TeachingPage> {
                             },
                           ),
                           const SizedBox(height: AppSpacing.xs),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                            child: _RecordingStatusCard(state: recordState),
-                          ),
+                          if (showCard)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                              child: _RecordingStatusCard(state: recordState),
+                            ),
                         ],
                       );
                     },

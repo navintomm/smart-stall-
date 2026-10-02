@@ -90,9 +90,9 @@ class DmpPreviewNotifier extends StateNotifier<DmpPreviewState> {
   /// This avoids a runtime dependency on the Python subprocess and keeps
   /// the preview self-contained and testable.
   void loadFromRoutine(Routine routine) {
-    if (routine.frames.isEmpty) {
+    if (routine.frames.length < 2) {
       state = state.copyWith(
-        errorMessage: 'Routine "${routine.name}" has no recorded frames.',
+        errorMessage: 'Routine "${routine.name}" must have at least 2 frames.',
         isLoading: false,
       );
       return;
@@ -210,7 +210,7 @@ class DmpPreviewNotifier extends StateNotifier<DmpPreviewState> {
     // Build time vector (seconds)
     final t = List<double>.generate(n, (i) => frames[i].timestampMs / 1000.0);
     final tau = t.last - t.first;
-    if (tau <= 0) throw ArgumentError('Duration must be positive');
+    if (tau <= 0) throw ArgumentError('Routine duration is zero. Please record a longer motion.');
     final dt = tau / (n - 1);
 
     // Extract positions

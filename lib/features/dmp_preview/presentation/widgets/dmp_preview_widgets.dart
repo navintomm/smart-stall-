@@ -7,7 +7,9 @@ import '../../../../core/theme/app_radius.dart';
 import '../../domain/models/dmp_joint_metrics.dart';
 import '../../domain/models/dmp_result.dart';
 import '../../domain/services/dmp_validator.dart';
+import '../../domain/models/trajectory_streaming_state.dart';
 import '../providers/dmp_preview_provider.dart';
+import '../providers/dmp_streamer_provider.dart';
 
 /// Playback controls bar: Play/Pause, Restart, Speed selector, View mode toggle.
 class PlaybackControlsBar extends ConsumerWidget {
@@ -262,13 +264,13 @@ class MetricsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionLabel('Error Metrics'),
+          const _SectionLabel('Error Metrics'),
           const SizedBox(height: AppSpacing.sm),
           _JointMetricsCard(metrics: result.servo1Metrics, label: 'Servo 1'),
           const SizedBox(height: AppSpacing.sm),
           _JointMetricsCard(metrics: result.servo2Metrics, label: 'Servo 2'),
           const SizedBox(height: AppSpacing.lg),
-          _SectionLabel('Smoothness (Sum of Squared Jerk)'),
+          const _SectionLabel('Smoothness (Sum of Squared Jerk)'),
           const SizedBox(height: 4),
           Text(
             'Lower = smoother. Raw signal quality — no pass/fail threshold defined.',
@@ -491,6 +493,14 @@ class ApproveRejectBar extends ConsumerWidget {
     final state = ref.watch(dmpPreviewProvider);
     final notifier = ref.read(dmpPreviewProvider.notifier);
     final isApproved = state.result?.isApproved ?? false;
+    final streamState = ref.watch(dmpStreamerProvider);
+    final streamer = ref.read(dmpStreamerProvider.notifier);
+    
+    final isStreaming = streamState.status != StreamingStatus.idle && 
+                        streamState.status != StreamingStatus.ready &&
+                        streamState.status != StreamingStatus.completed &&
+                        streamState.status != StreamingStatus.aborted &&
+                        streamState.status != StreamingStatus.failed;
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -519,9 +529,11 @@ class ApproveRejectBar extends ConsumerWidget {
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isApproved
-                      ? [AppColors.successGreen, const Color(0xFF16A34A)]
-                      : [AppColors.primary, const Color(0xFF6B5BD6)],
+                  colors: isStreaming
+                      ? [AppColors.warningOrange, Colors.deepOrange]
+                      : isApproved
+                          ? [AppColors.successGreen, const Color(0xFF16A34A)]
+                          : [AppColors.primary, const Color(0xFF6B5BD6)],
                 ),
                 borderRadius: BorderRadius.circular(100),
                 boxShadow: [
@@ -536,7 +548,12 @@ class ApproveRejectBar extends ConsumerWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: isApproved ? null : notifier.approve,
+                  onTap: isStreaming 
+                      ? streamer.abortStreaming 
+                      : () {
+                          if (state.result != null) streamer.startStreaming(state.result!);
+                          notifier.approve();
+                        },
                   borderRadius: BorderRadius.circular(100),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -544,15 +561,19 @@ class ApproveRejectBar extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          isApproved
-                              ? Icons.check_circle_rounded
-                              : Icons.thumb_up_rounded,
+                          isStreaming 
+                              ? Icons.stop_circle_rounded
+                              : isApproved
+                                  ? Icons.check_circle_rounded
+                                  : Icons.memory_rounded,
                           color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isApproved ? 'Approved ✓' : 'Approve Motion',
+                          isStreaming 
+                              ? 'ABORT DRY-RUN'
+                              : isApproved ? 'Approved ✓' : 'RUN DRY-RUN',
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -567,6 +588,91 @@ class ApproveRejectBar extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class DryRunStreamingStatus extends ConsumerWidget {
+  const DryRunStreamingStatus({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dmpStreamerProvider);
+    if (state.status == StreamingStatus.idle) return const SizedBox.shrink();
+
+    final statusText = switch (state.status) {
+      StreamingStatus.preparing => 'PREPARING',
+      StreamingStatus.sendingBegin => 'SENDING BEGIN',
+      StreamingStatus.streaming => 'STREAMING',
+      StreamingStatus.sendingEnd => 'SENDING END',
+      StreamingStatus.ready => 'EXECUTING',
+      StreamingStatus.failed => 'FAILED',
+      StreamingStatus.aborted => 'ABORTED',
+      StreamingStatus.completed => 'COMPLETE',
+      _ => '',
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.borderLight),
+        borderRadius: AppRadius.smallRadius,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('DRY RUN', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
+              Text('ESP32: $statusText', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _StatItem('Streaming', '${state.currentChunk} / ${state.totalChunks} chunks'),
+              _StatItem('Samples', '${state.samplesTransmitted} / ${state.totalSamples}'),
+              _StatItem('Errors', state.error != null ? 'Yes' : 'None'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: state.progress,
+              backgroundColor: AppColors.borderLight,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                state.status == StreamingStatus.failed || state.status == StreamingStatus.aborted
+                    ? AppColors.dangerRed
+                    : AppColors.primary,
+              ),
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatItem(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 10)),
+        Text(value, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }

@@ -107,12 +107,22 @@ class _CleaningControlPanelState extends ConsumerState<CleaningControlPanel> {
         r.markerId == widget.markerId || r.markerId == null
     ).toList();
 
+    // 1. Auto-select exact match ONLY if alignment is ready (distance == 0)
+    if (widget.alignmentReady && widget.markerId != null) {
+      final exactMatches = availableRoutines.where((r) => r.markerId == widget.markerId).toList();
+      if (exactMatches.isNotEmpty && _selectedRoutineId != exactMatches.first.id) {
+        _selectedRoutineId = exactMatches.first.id;
+      }
+    }
+
+    // 2. Initial default fallback
     if (_selectedRoutineId == null && libraryState.defaultRoutineId != null) {
       if (availableRoutines.any((r) => r.id == libraryState.defaultRoutineId)) {
         _selectedRoutineId = libraryState.defaultRoutineId;
       }
     }
     
+    // 3. Invalid selection fallback
     if (_selectedRoutineId != null &&
         availableRoutines.every((r) => r.id != _selectedRoutineId)) {
       _selectedRoutineId = availableRoutines.isEmpty ? null : availableRoutines.first.id;

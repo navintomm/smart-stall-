@@ -156,21 +156,21 @@ class _RoutineCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
 
           // Action buttons row
-          Row(
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               _ActionButton(
                 icon: AppIcons.preview,
                 label: 'Preview',
                 onTap: () => _showPreview(context),
               ),
-              const SizedBox(width: AppSpacing.sm),
               _ActionButton(
                 icon: Icons.auto_awesome_rounded,
                 label: 'Run DMP',
                 onTap: () => context.push(AppRoutes.dmpPreview, extra: routine),
                 accent: true,
               ),
-              const SizedBox(width: AppSpacing.sm),
               if (!isDefault)
                 _ActionButton(
                   icon: AppIcons.defaultRoutine,
